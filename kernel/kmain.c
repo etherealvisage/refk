@@ -2,7 +2,6 @@
 
 #include "kutil.h"
 
-#define PHY_MAP_BASE (uint8_t *)0xffffc00000000000ULL
 #define MAX_TASKS 32
 
 typedef struct task_state {
@@ -59,7 +58,9 @@ void kmain(uint64_t __attribute__((unused)) *mem) {
     d_init(); // set up the serial port
 
     // clear the main screen
-    for(int i = 0; i < 80*24*2; i ++) (PHY_MAP_BASE) [0xb8000 + i] = 0;
+    for(int i = 0; i < 80*24*2; i ++) {
+        phy_write8(0xb8000 + i, 0);
+    }
 
     for(int i = 0; i < MAX_TASKS; i ++) {
         tasks[i].valid = 0;
@@ -73,6 +74,7 @@ void kmain(uint64_t __attribute__((unused)) *mem) {
     // start with first thread
     current_task = tasks + 0;
 
+    // switch from boot task to new task
     enter_task();
 
     // should never be reached!
