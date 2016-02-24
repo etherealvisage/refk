@@ -99,6 +99,19 @@ uint64_t kmem_current() {
     return current;
 }
 
+uint64_t kmem_create_root() {
+    uint64_t ret = kmem_getpage();
+    // zero out root
+    for(int i = 0; i < 512; i ++) phy_write64(ret + i*8, 0);
+    // add physical memory map
+    uint8_t ok;
+    // #define PHY_MAP_BASE (uint8_t *)0xffffc00000000000ULL
+    kmem_map(ret, 0xffffc00000000000,
+        kmem_paging_addr(boot_cr3, 0xffffc00000000000, 0, &ok),
+        KMEM_MAP_DEFAULT);
+    return ret;
+}
+
 void kmem_map(uint64_t root, uint64_t vaddr, uint64_t page, uint16_t flags) {
     uint8_t ok;
     // try short version

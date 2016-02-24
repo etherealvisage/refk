@@ -12,6 +12,7 @@ uint64_t kmem_getpage();
 
 uint64_t kmem_boot();
 uint64_t kmem_current();
+uint64_t kmem_create_root();
 void kmem_map(uint64_t root, uint64_t vaddr, uint64_t page, uint16_t flags);
 
 #endif
