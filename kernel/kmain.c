@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+#include "kutil.h"
+
 #define PHY_MAP_BASE (uint8_t *)0xffffc00000000000ULL
 #define MAX_TASKS 32
 
@@ -54,9 +56,10 @@ void idle_thread() {
 }
 
 void kmain(uint64_t __attribute__((unused)) *mem) {
+    d_init(); // set up the serial port
+
+    // clear the main screen
     for(int i = 0; i < 80*24*2; i ++) (PHY_MAP_BASE) [0xb8000 + i] = 0;
-    //(PHY_MAP_BASE) [0xb8000] = 'a';
-    //(PHY_MAP_BASE) [0xb8001] = 7;
 
     for(int i = 0; i < MAX_TASKS; i ++) {
         tasks[i].valid = 0;
