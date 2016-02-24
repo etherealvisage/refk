@@ -1,6 +1,8 @@
 #include <stdint.h>
 
 #include "kutil.h"
+#include "kmem.h"
+#include "kcomm.h"
 
 #define MAX_TASKS 32
 
@@ -54,8 +56,46 @@ void idle_thread() {
     }
 }
 
-void kmain(uint64_t __attribute__((unused)) *mem) {
+void producer_thread() {
+    kcomm_t *kc = (void *)(0x12340000);
+    kcomm_init(kc, 0x1000);
+
+    uint64_t counter = 0;
+    while(1) {
+        kcomm_put(kc, &counter, 8);
+        for(int i = 0; i < 100000000; i ++) {
+            ;
+        }
+        yield();
+        counter ++;
+    }
+}
+
+void consumer_thread() {
+    kcomm_t *kc = (void *)(0x23450000);
+    while(1) {
+        uint64_t packet;
+        uint64_t packet_length;
+        if(kcomm_get(kc, &packet, &packet_length) == 0) {
+            d_printf("Received packet! %x\n", packet);
+        }
+        else d_printf("No packet...\n");
+        yield();
+    }
+}
+
+void init_thread() {
+    d_printf("Running init thread...\n");
+
+    //*(uint8_t *)(0xdeadc0de) = 0xff;
+    while(1) { yield(); }
+}
+
+char producer_stack[4096];
+
+void kmain(uint64_t *mem) {
     d_init(); // set up the serial port
+    kmem_init(mem); // initialize bootstrap memory manager
 
     // clear the main screen
     for(int i = 0; i < 80*24*2; i ++) {
@@ -69,7 +109,18 @@ void kmain(uint64_t __attribute__((unused)) *mem) {
     char idle_stack[64];
     make_thread(idle_thread, idle_stack, 64);
 
-    // TODO: create your initial tasks here
+    char init_stack[256];
+    make_thread(init_thread, init_stack, 256);
+
+    {
+        uint64_t comm_page = kmem_getpage();
+        kmem_map(kmem_boot(), 0x12340000, comm_page, KMEM_MAP_DEFAULT);
+        kmem_map(kmem_boot(), 0x23450000, comm_page, KMEM_MAP_DEFAULT);
+    }
+
+    make_thread(producer_thread, producer_stack, 4096);
+    char consumer_stack[256];
+    make_thread(consumer_thread, consumer_stack, 256);
 
     // start with first thread
     current_task = tasks + 0;
