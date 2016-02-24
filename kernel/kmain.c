@@ -11,8 +11,10 @@ typedef struct task_state {
 task_state_t tasks[MAX_TASKS];
 task_state_t *current_task;
 
+// executes on the task stack (1024 bytes)
+// should set current_task to whatever the next task to use is
 void select_next_task() {
-    // simple round-robin for now
+    // simple round-robin selection
     const task_state_t *end = tasks + MAX_TASKS;
     while(1) {
         current_task ++;
@@ -37,6 +39,7 @@ void make_thread(void (*function)(), void *stack_memory, uint64_t stack_size) {
 
         tasks[i].registers[5] = (uint64_t)function;
         tasks[i].registers[7] = (uint64_t)stack_memory + stack_size;
+        tasks[i].registers[8] = 0x2; // rflags
         tasks[i].registers[9] = (uint64_t)thread_wrapper;
 
         tasks[i].valid = 1;
@@ -44,14 +47,23 @@ void make_thread(void (*function)(), void *stack_memory, uint64_t stack_size) {
     }
 }
 
+void idle_thread() {
+    while(1) {
+        yield();
+    }
+}
+
 void kmain(uint64_t __attribute__((unused)) *mem) {
     for(int i = 0; i < 80*24*2; i ++) (PHY_MAP_BASE) [0xb8000 + i] = 0;
-    (PHY_MAP_BASE) [0xb8000] = 'a';
-    (PHY_MAP_BASE) [0xb8001] = 7;
+    //(PHY_MAP_BASE) [0xb8000] = 'a';
+    //(PHY_MAP_BASE) [0xb8001] = 7;
 
     for(int i = 0; i < MAX_TASKS; i ++) {
         tasks[i].valid = 0;
     }
+
+    char idle_stack[64];
+    make_thread(idle_thread, idle_stack, 64);
 
     // TODO: create your initial tasks here
 
@@ -63,4 +75,3 @@ void kmain(uint64_t __attribute__((unused)) *mem) {
     // should never be reached!
     while(1) {}
 }
-

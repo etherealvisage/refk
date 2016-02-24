@@ -61,9 +61,8 @@ enter_task:
 	mov	rbx, qword [rax + 7*8]
 	push	rbx ; rsp
 
-	;mov	rbx, qword [rax + 8*8]
-	;push	rbx ; rflags
-	pushfq
+	mov	rbx, qword [rax + 8*8]
+	push	rbx ; rflags
 
 	xor	rbx, rbx
 	mov	bx, cs
@@ -76,13 +75,11 @@ enter_task:
 	mov	rbx, qword [rax + 1*8]
 	mov	rax, qword [rax]
 
-
 	iretq
 
 yield_exit:
 	ret
 
 section .bss
-	resq	128
+	resb	1024
 task_stack:
-	resq	128
