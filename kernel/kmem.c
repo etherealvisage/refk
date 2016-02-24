@@ -93,6 +93,12 @@ uint64_t kmem_boot() {
     return boot_cr3;
 }
 
+uint64_t kmem_current() {
+    uint64_t current;
+    __asm__ __volatile__ ("mov rax, cr3" : "=a"(current));
+    return current;
+}
+
 void kmem_map(uint64_t root, uint64_t vaddr, uint64_t page, uint16_t flags) {
     uint8_t ok;
     // try short version
