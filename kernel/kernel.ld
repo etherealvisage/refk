@@ -1,8 +1,8 @@
 OUTPUT_FORMAT(elf64-x86-64)
 ENTRY(bootstrap)
 
-kernel_pbase = 0x1000000;
-kernel_vbase = 0xffffffff80000000;
+kernel_pbase = 0x1000000; /* 16MB mark */
+kernel_vbase = 0xffffffff80000000; /* 2**64 - 2**31, 2GB of space */
 
 PHDRS {
     header PT_LOAD;
@@ -18,16 +18,18 @@ SECTIONS {
     } :header
 
     .bootstrap : { 
-        multiboot.o (.text)
-        multiboot.o (.rodata)
+        multiboot.o (.mb_text)
+        multiboot.o (.mb_rodata)
+        /* ensure page tables are aligned to 4KB boundary */
         . = ALIGN(4096);
-        multiboot.o (.bss)
-        
-        . = ALIGN(4096);
+        multiboot.o (.mb_bss)
     } :header
     
     . += kernel_vbase - kernel_pbase;
     _start = .;
+
+    /* 4KB alignment */
+    . = ALIGN(0x1000);
     
     .text : AT(ADDR(.text) - kernel_vbase + kernel_pbase) {
         _code = .;
@@ -39,27 +41,28 @@ SECTIONS {
         *(.eh_frame)
         _code_end = .;
         _code_phy_end = . + kernel_pbase - kernel_vbase;
-        /* 2MB alignment */
-        . = ALIGN(0x200000);
     } :code
+
+    /* 4KB alignment */
+    . = ALIGN(0x1000);
     
-    .data : AT(ADDR(.data) - kernel_vbase + kernel_pbase) {
+    .data : {
         _data = .;
         _data_phy_begin = . + kernel_pbase - kernel_vbase;
         *(.data)
     } :data
     
-    .bss : AT(ADDR(.bss) - kernel_vbase + kernel_pbase) {
+    .bss : {
         _bss_start = .;
-        *(EXCLUDE_FILE(*multiboot.o) .bss)
+        *(.bss)
 
         *(COMMON)
         _bss_end = .;
         _data_end = .;
         _data_phy_end = . + kernel_pbase - kernel_vbase;
-        /* 2MB alignment */
-        . = ALIGN(0x200000);
     } :data
+    /* 4KB alignment */
+    . = ALIGN(0x1000);
 
     _end = .;
 
