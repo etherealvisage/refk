@@ -23,13 +23,13 @@ SECTIONS {
         /* ensure page tables are aligned to 4KB boundary */
         . = ALIGN(4096);
         multiboot.o (.mb_bss)
+        /* must end on a 4KB boundary */
+        . = ALIGN(0x1000);
     } :header
     
     . += kernel_vbase - kernel_pbase;
     _start = .;
 
-    /* 4KB alignment */
-    . = ALIGN(0x1000);
     
     .text : AT(ADDR(.text) - kernel_vbase + kernel_pbase) {
         _code = .;
@@ -41,11 +41,10 @@ SECTIONS {
         *(.eh_frame)
         _code_end = .;
         _code_phy_end = . + kernel_pbase - kernel_vbase;
+        /* must end on a 4KB boundary */
+        . = ALIGN(0x1000);
     } :code
 
-    /* 4KB alignment */
-    . = ALIGN(0x1000);
-    
     .data : {
         _data = .;
         _data_phy_begin = . + kernel_pbase - kernel_vbase;
@@ -61,6 +60,7 @@ SECTIONS {
         _data_end = .;
         _data_phy_end = . + kernel_pbase - kernel_vbase;
     } :data
+
     /* 4KB alignment */
     . = ALIGN(0x1000);
 

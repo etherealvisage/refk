@@ -1,5 +1,7 @@
 #include "kmem.h"
 #include "kutil.h"
+#include "task.h"
+#include "desc.h"
 
 extern char kernel_pbase;
 extern char _data_end;
@@ -43,6 +45,10 @@ void kmem_init(uint64_t *regions) {
 
     // get boot CR3 value
     __asm__ __volatile__ ("mov rax, cr3" : "=a"(boot_cr3));
+
+    // set up basic images
+    task_init();
+    desc_init();
 }
 
 void kmem_unuse(uint64_t page) {
@@ -89,6 +95,30 @@ static uint64_t kmem_paging_addr(uint64_t root, uint64_t address,
     }
 }
 
+static uint64_t kmem_paging_addr_create(uint64_t root, uint64_t vaddr,
+    uint8_t level) {
+
+    uint8_t ok;
+    uint64_t addr = kmem_paging_addr(root, vaddr, level, &ok);
+    if(!ok) {
+        // need to allocate some intermediate entries
+        uint64_t pa = -1;
+        for(int i = 0; i <= level; i ++) {
+            uint64_t a = kmem_paging_addr(root, vaddr, i, &ok);
+            if(!ok) {
+                uint64_t ntable = kmem_getpage();
+                phy_write64(pa, ntable | 0x7);
+                a = kmem_paging_addr(root, vaddr, i, &ok);
+            }
+            pa = a;
+        }
+
+        addr = kmem_paging_addr(root, vaddr, level, &ok);
+    }
+
+    return addr;
+}
+
 uint64_t kmem_boot() {
     return boot_cr3;
 }
@@ -101,36 +131,53 @@ uint64_t kmem_current() {
 
 uint64_t kmem_create_root() {
     uint64_t ret = kmem_getpage();
+
     // zero out root
     for(int i = 0; i < 512; i ++) phy_write64(ret + i*8, 0);
+
     // add physical memory map
-    uint8_t ok;
-    // #define PHY_MAP_BASE (uint8_t *)0xffffc00000000000ULL
-    kmem_map(ret, 0xffffc00000000000,
-        kmem_paging_addr(boot_cr3, 0xffffc00000000000, 0, &ok),
-        KMEM_MAP_DEFAULT);
+    // this uses 1GB pages, so want entry in level 1 (that covers phy and more)
+    uint64_t nentry = kmem_paging_addr_create(ret, 0xffffc00000000000ULL, 1);
+    uint64_t bentry =
+        kmem_paging_addr_create(boot_cr3, 0xffffc00000000000ULL, 1);
+    phy_write64(nentry, phy_read64(bentry));
+    // copy task level 2 structure (2MB total)
+    nentry = kmem_paging_addr_create(ret, TASK_BASE, 2);
+    bentry = kmem_paging_addr_create(boot_cr3, TASK_BASE, 2);
+    phy_write64(nentry, phy_read64(bentry));
+    // copy descriptors level 2 structure (2MB total)
+    nentry = kmem_paging_addr_create(ret, DESC_BASE, 2);
+    bentry = kmem_paging_addr_create(boot_cr3, DESC_BASE, 2);
+    phy_write64(nentry, phy_read64(bentry));
+
+    {
+        d_printf("comparison of values:\n");
+        uint64_t e0 = kmem_paging_addr_create(ret, TASK_BASE, 0);
+        uint64_t e1 = kmem_paging_addr_create(ret, TASK_BASE, 1);
+        uint64_t e2 = kmem_paging_addr_create(ret, TASK_BASE, 2);
+        uint64_t e3 = kmem_paging_addr_create(ret, TASK_BASE, 3);
+        d_printf("nentry: %x %x %x %x\n", e0, e1, e2, e3);
+        e0 = phy_read64(e0);
+        e1 = phy_read64(e1);
+        e2 = phy_read64(e2);
+        e3 = phy_read64(e3);
+        d_printf("nentry *: %x %x %x %x\n", e0, e1, e2, e3);
+        e0 = kmem_paging_addr_create(boot_cr3, TASK_BASE, 0);
+        e1 = kmem_paging_addr_create(boot_cr3, TASK_BASE, 1);
+        e2 = kmem_paging_addr_create(boot_cr3, TASK_BASE, 2);
+        e3 = kmem_paging_addr_create(boot_cr3, TASK_BASE, 3);
+        d_printf("bentry: %x %x %x %x\n", e0, e1, e2, e3);
+        e0 = phy_read64(e0);
+        e1 = phy_read64(e1);
+        e2 = phy_read64(e2);
+        e3 = phy_read64(e3);
+        d_printf("bentry *: %x %x %x %x\n", e0, e1, e2, e3);
+    }
+
     return ret;
 }
 
-void kmem_map(uint64_t root, uint64_t vaddr, uint64_t page, uint16_t flags) {
-    uint8_t ok;
-    // try short version
-    uint64_t addr = kmem_paging_addr(root, vaddr, 3, &ok);
-    if(!ok) {
-        // need to allocate some intermediate entries
-        uint64_t pa = -1;
-        for(int i = 0; i <= 3; i ++) {
-            uint64_t a = kmem_paging_addr(root, vaddr, i, &ok);
-            if(!ok) {
-                uint64_t ntable = kmem_getpage();
-                phy_write64(pa, ntable | 0x7);
-                a = kmem_paging_addr(root, vaddr, i, &ok);
-            }
-            pa = a;
-        }
-
-        addr = kmem_paging_addr(root, vaddr, 3, &ok);
-    }
-
+void kmem_map(uint64_t root, uint64_t vaddr, uint64_t page, uint64_t flags) {
+    uint64_t addr = kmem_paging_addr_create(root, vaddr, 3);
     phy_write64(addr, page | flags);
 }

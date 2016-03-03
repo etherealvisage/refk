@@ -8,6 +8,10 @@ all: kernel
 kernel:
 	$(MAKE) -C kernel
 
+.PHONY: depend
+depend:
+	$(MAKE) -C kernel depend
+
 .PHONY: qemu
 qemu: kernel
 	TERM=xterm $(QEMU_PATH) $(QEMU_FLAGS) -kernel kernel/kernel.bin
