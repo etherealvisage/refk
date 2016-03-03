@@ -15,7 +15,10 @@ LDSCRIPT=kernel.ld
 
 KERNEL_SOURCES=$(wildcard *.c) $(wildcard *.s)
 
-OBJECTS=$(KERNEL_SOURCES:.c=.o)
+#IMAGE_SOURCES:=$(wildcard images/*.s)
+#IMAGES:=$(IMAGE_SOURCES:.s=.h)
+
+OBJECTS:=$(KERNEL_SOURCES:.c=.o)
 OBJECTS:=$(OBJECTS:.s=.o)
 
 .PHONY: all
@@ -29,6 +32,9 @@ all: $(KERNEL_OUTPUT)
 images/transfer.h: images/transfer.s
 	$(NASM) -f bin images/transfer.s -o images/transfer
 	$(XXD) -i images/transfer > images/transfer.h
+
+#.PHONY: images
+#images: $(IMAGES)
 
 $(KERNEL_OUTPUT): $(OBJECTS) $(LOADER_SOURCES) $(LDSCRIPT)
 	$(LD) $(LDFLAGS) -T $(LDSCRIPT) -o kernel.bin $(OBJECTS)
