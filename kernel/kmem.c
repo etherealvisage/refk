@@ -47,7 +47,6 @@ void kmem_init(uint64_t *regions) {
     __asm__ __volatile__ ("mov rax, cr3" : "=a"(boot_cr3));
 
     // set up basic images
-    task_init();
     desc_init();
 }
 
@@ -80,8 +79,8 @@ static uint64_t kmem_paging_addr(uint64_t root, uint64_t address,
     else {
         uint64_t prev = kmem_paging_addr(root, address, level-1, ok);
 
-        if(!ok) return 0;
-        
+        if(!*ok) return 0;
+
         uint64_t entry = phy_read64(prev);
 
         if((entry & 1) == 0) {
@@ -100,6 +99,7 @@ static uint64_t kmem_paging_addr_create(uint64_t root, uint64_t vaddr,
 
     uint8_t ok;
     uint64_t addr = kmem_paging_addr(root, vaddr, level, &ok);
+
     if(!ok) {
         // need to allocate some intermediate entries
         uint64_t pa = -1;
@@ -150,7 +150,7 @@ uint64_t kmem_create_root() {
     bentry = kmem_paging_addr_create(boot_cr3, DESC_BASE, 2);
     phy_write64(nentry, phy_read64(bentry));
 
-    {
+    /*{
         d_printf("comparison of values:\n");
         uint64_t e0 = kmem_paging_addr_create(ret, TASK_BASE, 0);
         uint64_t e1 = kmem_paging_addr_create(ret, TASK_BASE, 1);
@@ -172,7 +172,7 @@ uint64_t kmem_create_root() {
         e2 = phy_read64(e2);
         e3 = phy_read64(e3);
         d_printf("bentry *: %x %x %x %x\n", e0, e1, e2, e3);
-    }
+    }*/
 
     return ret;
 }
@@ -180,4 +180,31 @@ uint64_t kmem_create_root() {
 void kmem_map(uint64_t root, uint64_t vaddr, uint64_t page, uint64_t flags) {
     uint64_t addr = kmem_paging_addr_create(root, vaddr, 3);
     phy_write64(addr, page | flags);
+}
+
+void kmem_set_flags(uint64_t root, uint64_t vaddr, uint64_t flags) {
+    uint64_t addr = kmem_paging_addr_create(root, vaddr, 3);
+    phy_write64(addr, (phy_read64(addr) & ~KMEM_FLAG_MASK) | flags);
+}
+
+void kmem_memcpy(uint64_t root, uint64_t vaddr, void *data, uint64_t size) {
+    uint8_t ok;
+    // NOTE: this assumes 4KB pages!
+    while(size > 0) {
+        uint64_t pg = vaddr & ~0xfff;
+        uint64_t pg_off = vaddr & 0xfff;
+        
+        uint64_t entry = kmem_paging_addr(root, pg, 3, &ok);
+        if(!ok) return;
+        uint64_t phy_addr = phy_read64(entry) & ~KMEM_FLAG_MASK;
+
+        uint64_t wsize = 0x1000 - pg_off;
+        if(wsize > size) wsize = size;
+
+        memcpy((void *)(0xffffc00000000000ULL + phy_addr + pg_off),
+            data, wsize);
+
+        vaddr += wsize;
+        size -= wsize;
+    }
 }

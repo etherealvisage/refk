@@ -74,9 +74,9 @@ transfer_control:
 	mov	r14, qword [rsi + 14*8]
 	mov	r15, qword [rsi + 15*8]
 
-	; XXX: we need a valid stack here!
+	; we need a valid stack. As a hack, use the first task slot.
 	; TODO: remove this hack
-	mov	rsp, 0xffffffffffe01800
+	mov	rsp, 0xffffffffffe01100
 
 	; stack push order: SS, RSP, RFLAGS, CS, RIP
 	mov	rax, qword [rsi + 23*8] ; ss

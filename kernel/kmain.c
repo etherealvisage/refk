@@ -4,14 +4,38 @@
 #include "kmem.h"
 #include "task.h"
 
-void test() {
-    d_printf("test\n");
-    while(1) {}
-}
+#include "images/transfer.h"
+#include "images/boot.h"
 
 void kmain(uint64_t *mem) {
     d_init(); // set up the serial port
+    d_printf("Rebooting...\n");
     kmem_init(mem); // initialize bootstrap memory manager
+
+    // task initialization
+    {
+        uint64_t transfer_page = kmem_getpage();
+        // map as data initially
+        kmem_map(kmem_boot(), TASK_BASE, transfer_page,
+            KMEM_MAP_DEFAULT);
+        memcpy((void *)TASK_BASE, images_transfer, images_transfer_len);
+        // remap as code
+        kmem_map(kmem_boot(), TASK_BASE, transfer_page,
+            KMEM_MAP_CODE);
+
+        /* map task memory */
+        uint64_t ptr = TASK_BASE + 0x1000;
+        for(int i = 0; i < NUM_TASKS; i += 16) {
+            uint64_t page = kmem_getpage();
+            kmem_map(kmem_boot(), ptr, page, KMEM_MAP_DEFAULT);
+
+            ptr += 0x1000;
+        }
+
+        // mark task #0 as valid, this will be used as temporary stack space
+        // by the switcher
+        TASK_MEM(0)->valid = 1;
+    }
 
     // clear the main screen
     for(int i = 0; i < 80*24*2; i ++) {
@@ -19,8 +43,6 @@ void kmain(uint64_t *mem) {
     }
 
     void (*transfer)(void *, void *) = (void *)0xffffffffffe00000;
-
-    char smallstack[256];
 
     task_state_t *ntask = TASK_MEM(1);
 
@@ -36,9 +58,16 @@ void kmain(uint64_t *mem) {
     ntask->rsi = TASK_ADDR(0);
     ntask->cr3 = nroot;
 
-    transfer(TASK_MEM(0), ntask);
+    transfer(TASK_MEM(1), ntask);
 
     d_printf("transferred back!\n");
+
+    TASK_MEM(1)->valid = 1;
+
+    task_state_t *task = task_create(boot_elf, 0x10000);
+
+    d_printf("new task address: %x\n", task);
+    transfer(TASK_MEM(1), task);
 
     // should never be reached!
     while(1) {}

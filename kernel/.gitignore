@@ -1,2 +1,4 @@
 /kernel.bin
 /depend
+/libklib.a
+/boot.elf

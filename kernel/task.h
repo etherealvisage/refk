@@ -41,6 +41,6 @@ typedef struct {
 } task_state_t;
 
 void task_init();
-task_state_t *task_create(void *elf_image);
+task_state_t *task_create(void *elf_image, uint64_t stack_size);
 
 #endif
