@@ -344,6 +344,8 @@ setup_lmode:
 	mov	ecx, 0xc0000080 ; EFER
 	rdmsr
 	or	eax, 1<<8
+	; while we're at it, enable the NX bit
+	or	eax, 1<<11
 	wrmsr
 
 	; Actually enable paging . . .

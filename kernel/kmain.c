@@ -112,6 +112,7 @@ void kmain(uint64_t *mem) {
     char init_stack[256];
     make_thread(init_thread, init_stack, 256);
 
+
     {
         uint64_t comm_page = kmem_getpage();
         kmem_map(kmem_boot(), 0x12340000, comm_page, KMEM_MAP_DEFAULT);
