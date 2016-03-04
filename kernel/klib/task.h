@@ -9,6 +9,9 @@
 #define TASK_ADDR(i) (TASK_BASE + 0x1000 + (i)*256)
 #define TASK_MEM(i) ((task_state_t *)(TASK_ADDR(i)))
 
+#define TASK_STATE_VALID    0x01
+#define TASK_STATE_RUNNABLE 0x02
+
 typedef struct {
     uint64_t rax;           // 0
     uint64_t rbx;           // 1
@@ -37,9 +40,10 @@ typedef struct {
     uint64_t fs_base;       // 24
     uint64_t gs_base;       // 25
     uint64_t cr3;           // 26
-    uint64_t valid;         // 27
+    uint64_t state;         // 27
 } task_state_t;
 
 task_state_t *task_create(void *elf_image, uint64_t stack_size);
+task_state_t *task_create_local(void *entry, void *stack_top);
 
 #endif

@@ -5,18 +5,27 @@
 
 #define DEFAULT_TASK_STACK_TOP 0x80000000
 
-task_state_t *task_create(void *elf_image, uint64_t stack_size) {
+static task_state_t *find_available() {
     task_state_t *ts = 0;
-    for(int i = 0; i < NUM_TASKS; i ++) {
+    for(int i = 1; i < NUM_TASKS; i ++) {
         task_state_t *t = TASK_MEM(i);
-        if(t->valid) continue;
+        if(t->state & TASK_STATE_VALID) continue;
         ts = t;
         break;
     }
 
+    return ts;
+}
+
+task_state_t *task_create(void *elf_image, uint64_t stack_size) {
+    task_state_t *ts = find_available();
     if(!ts) return 0;
 
+    d_printf("task_create() called\n");
+
     ts->cr3 = kmem_create_root();
+
+    d_printf("    new root created\n");
 
     // round stack size up
     stack_size = (stack_size + 0xfff) & ~0xfff;
@@ -39,6 +48,7 @@ task_state_t *task_create(void *elf_image, uint64_t stack_size) {
     ts->rsp = DEFAULT_TASK_STACK_TOP;
 
     // map in ELF
+    d_printf("    mapping in ELF\n");
     Elf64_Ehdr *header = elf_image;
     Elf64_Phdr *phdrs = (void *)((uint8_t *)elf_image + header->e_phoff);
     for(int i = 0; i < header->e_phnum; i ++) {
@@ -69,7 +79,30 @@ task_state_t *task_create(void *elf_image, uint64_t stack_size) {
         }
     }
 
+    d_printf("    mapped!\n");
+
     ts->rip = header->e_entry;
+    ts->state = TASK_STATE_VALID;
+
+    return ts;
+}
+
+task_state_t *task_create_local(void *entry, void *stack_top) {
+    task_state_t *ts = find_available();
+    if(!ts) return 0;
+
+    ts->cr3 = kmem_current();
+
+    ts->cs = 0x08;
+    ts->ds = 0x10;
+    ts->es = 0x10;
+    ts->fs = 0x10;
+    ts->gs = 0x10;
+    ts->ss = 0x10;
+    ts->rflags = 0x2; // TODO: make this more sensible
+    ts->rsp = (uint64_t)stack_top;
+    ts->rip = (uint64_t)entry;
+    ts->state = TASK_STATE_VALID;
 
     return ts;
 }

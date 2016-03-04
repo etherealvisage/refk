@@ -23,6 +23,10 @@ BOOT_SOURCES:=$(wildcard boot/*.c)
 BOOT_OBJECTS:=$(BOOT_SOURCES:.c=.o)
 BOOT_OUTPUT=boot.elf
 
+SCHEDULER_SOURCES:=$(wildcard scheduler/*.c)
+SCHEDULER_OBJECTS:=$(SCHEDULER_SOURCES:.c=.o)
+SCHEDULER_OUTPUT=scheduler.elf
+
 PROC_LDSCRIPT=kproc.ld
 
 .PHONY: all
@@ -35,9 +39,10 @@ clean:
 	-rm -f images/intr images/intr.h
 	-rm -f $(KLIB_OBJECTS) $(KLIB_OUTPUT)
 	-rm -f images/boot.h $(BOOT_OBJECTS) $(BOOT_OUTPUT)
+	-rm -f images/scheduler.h $(SCHEDULER_OBJECTS) $(SCHEDULER_OUTPUT)
 	-rm -f $(KERNEL_OBJECTS) $(KERNEL_OUTPUT)
 
-depend: $(KERNEL_SOURCES) $(KLIB_SOURCES) $(BOOT_SOURCES) images/transfer.h images/intr.h images/boot.h
+depend: $(KERNEL_SOURCES) $(KLIB_SOURCES) $(BOOT_SOURCES) images/transfer.h images/intr.h images/boot.h images/scheduler.h
 	gcc -MM $(CFLAGS) $(KERNEL_SOURCES) $(KLIB_SOURCES) $(BOOT_SOURCES) > depend
 -include depend
 
@@ -45,8 +50,12 @@ $(KLIB_OUTPUT): $(KLIB_OBJECTS)
 	-rm -f $(KLIB_OUTPUT)
 	ar q $(KLIB_OUTPUT) $(KLIB_OBJECTS)
 
-$(BOOT_OUTPUT): $(BOOT_OBJECTS) $(KLIB_OUTPUT) $(PROC_LDSCRIPT)
+$(SCHEDULER_OUTPUT): $(SCHEDULER_OBJECTS) $(KLIB_OUTPUT) $(PROC_LDSCRIPT)
+	$(LD) $(LDFLAGS) -T $(PROC_LDSCRIPT) -o $(SCHEDULER_OUTPUT) $(SCHEDULER_OBJECTS) -L. -lklib
+
+$(BOOT_OUTPUT): $(BOOT_OBJECTS) $(KLIB_OUTPUT) $(PROC_LDSCRIPT) images/scheduler.h
 	$(LD) $(LDFLAGS) -T $(PROC_LDSCRIPT) -o $(BOOT_OUTPUT) $(BOOT_OBJECTS) -L. -lklib
+
 
 images/transfer.h: images/transfer.s
 	$(NASM) -f bin images/transfer.s -o images/transfer
@@ -58,6 +67,9 @@ images/intr.h: images/intr.s
 
 images/boot.h: $(BOOT_OUTPUT)
 	$(XXD) -i $(BOOT_OUTPUT) > images/boot.h
+
+images/scheduler.h: $(SCHEDULER_OUTPUT)
+	$(XXD) -i $(SCHEDULER_OUTPUT) > images/scheduler.h
 
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@

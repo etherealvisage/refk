@@ -3,17 +3,27 @@
 #include "task.h"
 #include "desc.h"
 
-uint64_t last_unused;
+uint64_t temp_last;
+uint64_t *last_unused = &temp_last;
+
+void kmem_setup() {
+    last_unused = (uint64_t *)KMEM_BASE_ADDR;
+}
+
+void kmem_setup_bootstrap(uint64_t last) {
+    kmem_setup();
+    *last_unused = last;
+}
 
 void kmem_unuse(uint64_t page) {
-    phy_write64(page, last_unused);
-    last_unused = page;
+    phy_write64(page, *last_unused);
+    *last_unused = page;
 }
 
 uint64_t kmem_getpage() {
     // TODO: handle error conditions!
-    uint64_t ret = last_unused;
-    last_unused = phy_read64(ret);
+    uint64_t ret = *last_unused;
+    *last_unused = phy_read64(ret);
     return ret;
 }
 
@@ -62,6 +72,7 @@ static uint64_t kmem_paging_addr_create(uint64_t root, uint64_t vaddr,
             uint64_t a = kmem_paging_addr(root, vaddr, i, &ok);
             if(!ok) {
                 uint64_t ntable = kmem_getpage();
+                for(int i = 0; i < 512; i ++) phy_write64(ntable + i*8, 0);
                 phy_write64(pa, ntable | 0x7);
                 a = kmem_paging_addr(root, vaddr, i, &ok);
             }
@@ -99,6 +110,10 @@ uint64_t kmem_create_root() {
     // copy descriptors level 2 structure (2MB total)
     nentry = kmem_paging_addr_create(ret, DESC_BASE, 2);
     bentry = kmem_paging_addr_create(kmem_current(), DESC_BASE, 2);
+    phy_write64(nentry, phy_read64(bentry));
+    // copy memory manager level 2 structure (2MB total)
+    nentry = kmem_paging_addr_create(ret, KMEM_BASE_ADDR, 2);
+    bentry = kmem_paging_addr_create(kmem_current(), KMEM_BASE_ADDR, 2);
     phy_write64(nentry, phy_read64(bentry));
 
     return ret;

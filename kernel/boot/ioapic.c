@@ -1,7 +1,7 @@
 #include "klib/kutil.h"
+#include "klib/lapic.h"
 
 #include "ioapic.h"
-#include "lapic.h"
 
 #define IOAPIC_BASE 0xfec00000
 

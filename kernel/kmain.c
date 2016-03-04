@@ -35,7 +35,7 @@ void kmain(uint64_t *mem) {
 
         // mark task #0 as valid, this will be used as temporary stack space
         // by the switcher
-        TASK_MEM(0)->valid = 1;
+        TASK_MEM(0)->state = TASK_STATE_VALID;
     }
     desc_init();
 
@@ -46,29 +46,7 @@ void kmain(uint64_t *mem) {
 
     void (*transfer)(void *, void *) = (void *)0xffffffffffe00000;
 
-    /*
-    task_state_t *ntask = TASK_MEM(1);
-
-    uint64_t nroot = kmem_create_root();
-
-    ntask->cs = 0x08;
-    ntask->ds = 0x10;
-    ntask->ss = 0x10;
-    ntask->rflags = 0x46;
-    ntask->rip = (uint64_t)transfer;
-    ntask->rsp = TASK_ADDR(3);
-    ntask->rdi = TASK_ADDR(1);
-    ntask->rsi = TASK_ADDR(0);
-    ntask->cr3 = nroot;
-
-    transfer(TASK_MEM(1), ntask);
-
-    d_printf("transferred back!\n");
-
-    TASK_MEM(1)->valid = 1;
-    */
-
-    task_state_t *task = task_create(boot_elf, 0x20000);
+    task_state_t *task = task_create(boot_elf, 0x10000);
 
     d_printf("new task address: %x\n", task);
     transfer(0, task);

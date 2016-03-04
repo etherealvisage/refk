@@ -4,9 +4,8 @@
 #include "klib/desc.h"
 
 extern char kernel_pbase;
-extern char _data_end;
+extern char _data_phy_end;
 
-uint64_t last_unused;
 uint64_t boot_cr3;
 
 void kmem_init(uint64_t *regions) {
@@ -25,12 +24,9 @@ void kmem_init(uint64_t *regions) {
         regions[i+1] = end - start;
     }
 
-
-    // use sentinel value for last_unused
-    last_unused = -1ul;
     // mark all pages as unused
     uint64_t kernel_start = (uint64_t)(&kernel_pbase);
-    uint64_t kernel_end = (uint64_t)(&_data_end);
+    uint64_t kernel_end = (uint64_t)(&_data_phy_end);
     for(int i = 0; regions[i] || regions[i+1]; i += 2) {
         const uint64_t end = regions[i] + regions[i+1];
         for(uint64_t p = regions[i]; p < end; p += 0x1000) {
@@ -45,6 +41,12 @@ void kmem_init(uint64_t *regions) {
 
     // get boot CR3 value
     __asm__ __volatile__ ("mov rax, cr3" : "=a"(boot_cr3));
+
+    // swap to global "last used" memory location
+    kmem_map(boot_cr3, KMEM_BASE_ADDR, kmem_getpage(), KMEM_MAP_DEFAULT);
+    uint64_t t = kmem_getpage();
+    kmem_unuse(t);
+    kmem_setup_bootstrap(t);
 }
 
 uint64_t kmem_boot() {

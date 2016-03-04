@@ -20,6 +20,9 @@ static void set_reg(uint64_t index, uint32_t value);
 
 void lapic_init() {
     disable_pic();
+}
+
+void lapic_setup() {
     lapic_base = kmsr_read(MSR_APIC_BASE) & ~0xfff;
 
     lapic_enable();

@@ -299,9 +299,6 @@ int_isr_%1:
 	cmp	qword rsi, 0
 	je	.skip_task
 
-	shl	rsi, 8
-	lea	rsi, [task_state_region + rsi]
-
 	mov	qword [rsi + 5*8], %1 ; rdi
 	mov	qword [rsi + 4*8], rbx ; rsi
 	mov	rdi, qword [task_state_region]

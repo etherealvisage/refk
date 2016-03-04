@@ -67,6 +67,8 @@ transfer_control:
 	mov	cr3, rbx
 .skip_swap:
 	; save "restored-into" task state pointer
+	; HACK: use first task slot for this
+	; TODO: remove this hack and use CPU-local storage
 	mov	qword [task_state_region], rsi
 
 	; restore GPRs except for rax, rsi, rsp
