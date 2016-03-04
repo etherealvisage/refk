@@ -35,6 +35,7 @@ SECTIONS {
         _code = .;
         _code_phy_begin = . + kernel_pbase - kernel_vbase;
         *(EXCLUDE_FILE(*multiboot.o) .text)
+        *(EXCLUDE_FILE(*multiboot.o) .text*)
         *(EXCLUDE_FILE(*multiboot.o) .rodata*)
 
         _eh_frame = .;

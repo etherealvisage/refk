@@ -1,10 +1,17 @@
 [BITS 64]
 [ORG 0xffffffffffe00000]
 
+task_state_region	equ 0xffffffffffe01000
+
 ; Expected as input:
 ;	rdi: points to task state structure to store state into
 ; 	rsi: points to task state structure to switch into
 transfer_control:
+	pushfq
+	cmp	rdi, 0
+	je	.skip_save
+	popfq
+
 	; save GPRs
 	mov	qword [rdi + 0*8], rax
 	mov	qword [rdi + 1*8], rbx
@@ -49,6 +56,7 @@ transfer_control:
 	mov	rax, cr3
 	mov	qword [rdi + 26*8], rax
 
+.skip_save:
 	; finished storing everything
 
 	; swap paging structures if required
@@ -58,6 +66,8 @@ transfer_control:
 
 	mov	cr3, rbx
 .skip_swap:
+	; save "restored-into" task state pointer
+	mov	qword [task_state_region], rsi
 
 	; restore GPRs except for rax, rsi, rsp
 	mov	rbx, qword [rsi + 1*8]

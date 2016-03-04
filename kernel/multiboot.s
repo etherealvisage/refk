@@ -42,6 +42,7 @@ bootstrap:
 	; Disable interrupts.
 	cli
 
+
 	; Check to make sure that this was indeed loaded by a Multiboot loader.
 	; Subtract the Multiboot magic signature from eax.
 	sub	eax, 0x2badb002

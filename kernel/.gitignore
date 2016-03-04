@@ -2,3 +2,4 @@
 /depend
 /libklib.a
 /boot.elf
+/.ycm*

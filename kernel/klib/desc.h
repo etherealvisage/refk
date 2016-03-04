@@ -8,6 +8,4 @@
 #define DESC_INT_TASKS_MEM ((uint64_t *)DESC_INT_TASKS_ADDR)
 #define DESC_INT_CODE_ADDR (DESC_BASE + 0x3000)
 
-void desc_init();
-
 #endif

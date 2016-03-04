@@ -2,7 +2,8 @@
 
 #include "kutil.h"
 #include "kmem.h"
-#include "task.h"
+#include "klib/task.h"
+#include "desc.h"
 
 #include "images/transfer.h"
 #include "images/boot.h"
@@ -36,6 +37,7 @@ void kmain(uint64_t *mem) {
         // by the switcher
         TASK_MEM(0)->valid = 1;
     }
+    desc_init();
 
     // clear the main screen
     for(int i = 0; i < 80*24*2; i ++) {
@@ -44,6 +46,7 @@ void kmain(uint64_t *mem) {
 
     void (*transfer)(void *, void *) = (void *)0xffffffffffe00000;
 
+    /*
     task_state_t *ntask = TASK_MEM(1);
 
     uint64_t nroot = kmem_create_root();
@@ -63,11 +66,12 @@ void kmain(uint64_t *mem) {
     d_printf("transferred back!\n");
 
     TASK_MEM(1)->valid = 1;
+    */
 
     task_state_t *task = task_create(boot_elf, 0x10000);
 
     d_printf("new task address: %x\n", task);
-    transfer(TASK_MEM(1), task);
+    transfer(0, task);
 
     // should never be reached!
     while(1) {}
