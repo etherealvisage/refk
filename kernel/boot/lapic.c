@@ -2,6 +2,7 @@
 
 #include "lapic.h"
 
+#define LAPIC_REG_ID 0x2
 #define LAPIC_REG_EOI 0xb
 #define LAPIC_REG_SPURIOUS 0xf
 #define LAPIC_REG_ISR 0x10
@@ -24,6 +25,10 @@ void lapic_init() {
     lapic_enable();
 
     // TODO: set up timer...
+}
+
+uint8_t lapic_id() {
+    return get_reg(LAPIC_REG_ID);
 }
 
 void lapic_enable() {
