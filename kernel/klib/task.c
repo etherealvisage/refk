@@ -35,7 +35,7 @@ task_state_t *task_create(void *elf_image, uint64_t stack_size) {
     ts->fs = 0x10;
     ts->gs = 0x10;
     ts->ss = 0x10;
-    ts->rflags = 0x46; // TODO: make this more sensible
+    ts->rflags = 0x2; // TODO: make this more sensible
     ts->rsp = DEFAULT_TASK_STACK_TOP;
 
     // map in ELF

@@ -307,8 +307,6 @@ int_isr_%1:
 	mov	rdi, qword [task_state_region]
 	mov	qword [rsi + 3*8], rdi ; rdx
 
-	mov	rdi, isr_save_region
-
 	call	transfer_control
 .skip_task:
 	pop	rsi

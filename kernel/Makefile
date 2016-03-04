@@ -32,11 +32,12 @@ all: $(KERNEL_OUTPUT)
 clean:
 	-rm -f depend
 	-rm -f images/transfer images/transfer.h
+	-rm -f images/intr images/intr.h
 	-rm -f $(KLIB_OBJECTS) $(KLIB_OUTPUT)
 	-rm -f images/boot.h $(BOOT_OBJECTS) $(BOOT_OUTPUT)
 	-rm -f $(KERNEL_OBJECTS) $(KERNEL_OUTPUT)
 
-depend: $(KERNEL_SOURCES) $(KLIB_SOURCES) $(BOOT_SOURCES) images/transfer.h images/boot.h
+depend: $(KERNEL_SOURCES) $(KLIB_SOURCES) $(BOOT_SOURCES) images/transfer.h images/intr.h images/boot.h
 	gcc -MM $(CFLAGS) $(KERNEL_SOURCES) $(KLIB_SOURCES) $(BOOT_SOURCES) > depend
 -include depend
 
@@ -63,5 +64,5 @@ images/boot.h: $(BOOT_OUTPUT)
 .s.o:
 	$(NASM) -f elf64 $< -o $@
 
-$(KERNEL_OUTPUT): images/transfer.h images/boot.h $(KERNEL_OBJECTS) $(LOADER_SOURCES) $(KERNEL_LDSCRIPT) 
+$(KERNEL_OUTPUT): images/transfer.h images/intr.h images/boot.h $(KERNEL_OBJECTS) $(LOADER_SOURCES) $(KERNEL_LDSCRIPT) 
 	$(LD) $(LDFLAGS) -T $(KERNEL_LDSCRIPT) -o kernel.bin $(KERNEL_OBJECTS) -L. -lklib

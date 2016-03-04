@@ -122,7 +122,9 @@ void kmem_memcpy(uint64_t root, uint64_t vaddr, void *data, uint64_t size) {
         uint64_t pg_off = vaddr & 0xfff;
         
         uint64_t entry = kmem_paging_addr(root, pg, 3, &ok);
-        if(!ok) return;
+        if(!ok) {
+            return;
+        }
         uint64_t phy_addr = phy_read64(entry) & ~KMEM_FLAG_MASK;
 
         uint64_t wsize = 0x1000 - pg_off;
@@ -131,6 +133,7 @@ void kmem_memcpy(uint64_t root, uint64_t vaddr, void *data, uint64_t size) {
         memcpy((void *)(0xffffc00000000000ULL + phy_addr + pg_off),
             data, wsize);
 
+        data += wsize;
         vaddr += wsize;
         size -= wsize;
     }

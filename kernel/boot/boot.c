@@ -6,22 +6,16 @@
 #include "../desc.h"
 
 void test(uint64_t vector, uint64_t excode, uint64_t ret_task) {
-    d_printf("In test function...\n");
-    d_printf("vector: %x excode: %x ret_task: %x\n", vector, excode, ret_task);
-    //void (*transfer)(void *, void *) = (void *)0xffffffffffe00000;
+    void (*transfer)(uint64_t, uint64_t) = (void *)0xffffffffffe00000;
 
-    //transfer(0, (void *)ret_task);
+    transfer(0, ret_task);
     while(1) {}
 }
 
 char test_stack[1024];
 
 void _start() {
-    d_printf("Beginning boot code...\n");
-
     lapic_init();
-
-    d_printf("Initialized lapic...\n");
 
     task_state_t *nt = TASK_MEM(5);
 
@@ -36,7 +30,7 @@ void _start() {
 
     DESC_INT_TASKS_MEM[3] = 5;
 
-    d_printf("About to trigger interrupt...\n");
+    d_printf("About to trigger interrupts...\n");
 
     __asm__ __volatile__("int3");
 

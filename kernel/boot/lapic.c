@@ -27,6 +27,7 @@ void lapic_init() {
 }
 
 void lapic_enable() {
+    __asm__ __volatile__("nop");
     // set bit 11 in the APIC_BASE MSR to enable the APIC
     uint32_t base = kmsr_read(MSR_APIC_BASE);
     base |= 1<<11;

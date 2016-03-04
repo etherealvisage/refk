@@ -68,7 +68,7 @@ void kmain(uint64_t *mem) {
     TASK_MEM(1)->valid = 1;
     */
 
-    task_state_t *task = task_create(boot_elf, 0x10000);
+    task_state_t *task = task_create(boot_elf, 0x20000);
 
     d_printf("new task address: %x\n", task);
     transfer(0, task);
