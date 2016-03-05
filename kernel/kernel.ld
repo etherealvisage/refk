@@ -14,29 +14,31 @@ SECTIONS {
     . = kernel_pbase;
 
     .mb_header : { 
-        multiboot.o (.mb_header)
+        kernel/multiboot.o (.mb_header)
     } :header
 
     .bootstrap : { 
-        multiboot.o (.mb_text)
-        multiboot.o (.mb_rodata)
+        kernel/multiboot.o (.mb_text)
+        kernel/multiboot.o (.mb_rodata)
         /* ensure page tables are aligned to 4KB boundary */
         . = ALIGN(4096);
-        multiboot.o (.mb_bss)
+        kernel/multiboot.o (.mb_bss)
         /* must end on a 4KB boundary */
-        . = ALIGN(0x1000);
+        . = ALIGN(4096);
     } :header
     
+    . = ALIGN(4096);
     . += kernel_vbase - kernel_pbase;
     _start = .;
+    . = ALIGN(4096);
 
-    
     .text : AT(ADDR(.text) - kernel_vbase + kernel_pbase) {
+        . = ALIGN(4096);
         _code = .;
         _code_phy_begin = . + kernel_pbase - kernel_vbase;
-        *(EXCLUDE_FILE(*multiboot.o) .text)
-        *(EXCLUDE_FILE(*multiboot.o) .text*)
-        *(EXCLUDE_FILE(*multiboot.o) .rodata*)
+
+        *(.text);
+        *(.rodata*);
 
         _eh_frame = .;
         *(.eh_frame)
@@ -45,6 +47,8 @@ SECTIONS {
         /* must end on a 4KB boundary */
         . = ALIGN(0x1000);
     } :code
+
+    . = ALIGN(0x1000);
 
     .data : {
         _data = .;

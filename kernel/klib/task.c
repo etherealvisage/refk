@@ -17,15 +17,11 @@ static task_state_t *find_available() {
     return ts;
 }
 
-task_state_t *task_create(void *elf_image, uint64_t stack_size) {
+task_state_t *task_create(const void *elf_image, uint64_t stack_size) {
     task_state_t *ts = find_available();
     if(!ts) return 0;
 
-    d_printf("task_create() called\n");
-
     ts->cr3 = kmem_create_root();
-
-    d_printf("    new root created\n");
 
     // round stack size up
     stack_size = (stack_size + 0xfff) & ~0xfff;
@@ -48,9 +44,8 @@ task_state_t *task_create(void *elf_image, uint64_t stack_size) {
     ts->rsp = DEFAULT_TASK_STACK_TOP;
 
     // map in ELF
-    d_printf("    mapping in ELF\n");
-    Elf64_Ehdr *header = elf_image;
-    Elf64_Phdr *phdrs = (void *)((uint8_t *)elf_image + header->e_phoff);
+    const Elf64_Ehdr *header = elf_image;
+    const Elf64_Phdr *phdrs = (void *)((uint8_t *)elf_image + header->e_phoff);
     for(int i = 0; i < header->e_phnum; i ++) {
         if(phdrs[i].p_type != PT_LOAD) continue;
 
@@ -78,8 +73,6 @@ task_state_t *task_create(void *elf_image, uint64_t stack_size) {
             }
         }
     }
-
-    d_printf("    mapped!\n");
 
     ts->rip = header->e_entry;
     ts->state = TASK_STATE_VALID;

@@ -3,7 +3,9 @@
 
 #include "kutil.h"
 
+const uint8_t intr_image[] = {
 #include "images/intr.h"
+};
 
 static void gdt_set_null(uint64_t index) {
     uint64_t *gdt_memory = (uint64_t *)DESC_GDT_ADDR;
@@ -83,14 +85,14 @@ void desc_init() {
     uint64_t tasks_page = kmem_getpage();
     kmem_map(kmem_boot(), DESC_INT_TASKS_ADDR, tasks_page, KMEM_MAP_DEFAULT);
     // map intr pages
-    for(uint64_t i = 0; i < images_intr_len; i += 0x1000) {
+    for(uint64_t i = 0; i < sizeof(intr_image); i += 0x1000) {
         kmem_map(kmem_boot(), DESC_INT_CODE_ADDR + i, kmem_getpage(),
             KMEM_MAP_DEFAULT);
     }
 
-    memcpy((void *)DESC_INT_CODE_ADDR, images_intr, images_intr_len);
+    memcpy((void *)DESC_INT_CODE_ADDR, intr_image, sizeof(intr_image));
     // protect intr pages
-    for(uint64_t i = 0; i < images_intr_len; i += 0x1000) {
+    for(uint64_t i = 0; i < sizeof(intr_image); i += 0x1000) {
         kmem_set_flags(kmem_boot(), DESC_INT_CODE_ADDR, KMEM_MAP_CODE);
     }
 

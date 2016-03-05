@@ -42,7 +42,6 @@ bootstrap:
 	; Disable interrupts.
 	cli
 
-
 	; Check to make sure that this was indeed loaded by a Multiboot loader.
 	; Subtract the Multiboot magic signature from eax.
 	sub	eax, 0x2badb002
@@ -267,11 +266,14 @@ extern _data_phy_end
 	or	eax, 3
 	mov	dword [paging_high_p2 + 0*8], eax
 
-	; Instead of using the physical address of the code section starting
-	; point, we need to use the kernel pbase to also map in the bootstrap
-	; code (this file).
-	mov	esi, kernel_pbase
+	mov	esi, _code_phy_begin
 	mov	edi, paging_high_p1
+
+	mov	ecx, _code_phy_begin
+	sub	ecx, kernel_pbase
+	shr	ecx, 9
+
+	add	edi, ecx
 
 	; Now it's time to map enough 4KB pages to cover everything.
 

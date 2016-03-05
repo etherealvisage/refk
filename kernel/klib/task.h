@@ -43,7 +43,7 @@ typedef struct {
     uint64_t state;         // 27
 } task_state_t;
 
-task_state_t *task_create(void *elf_image, uint64_t stack_size);
+task_state_t *task_create(const void *elf_image, uint64_t stack_size);
 task_state_t *task_create_local(void *entry, void *stack_top);
 
 #endif

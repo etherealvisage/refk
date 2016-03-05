@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+
+Import("env")
+
+env.FlatBinary('transfer.bin', 'images/transfer.s')
+env.Image('images/transfer.h', 'transfer.bin')
+env.FlatBinary('intr.bin', 'images/intr.s')
+env.Image('images/intr.h', 'intr.bin')
+
+klib_sources = Glob("klib/*.c")
+env.Library("klib", klib_sources)
+
+scheduler_sources = Glob("scheduler/*.c")
+env.Library("scheduler", scheduler_sources)
+env.KernelProc("scheduler.elf", ["libscheduler.a", "libklib.a"])
+env.Image("images/scheduler.h", "scheduler.elf")
+
+boot_sources = Glob("boot/*.c")
+env.Library("boot", boot_sources)
+env.KernelProc("boot.elf", ["libboot.a", "libklib.a"])
+env.Image("images/boot.h", "boot.elf")
+
+env.Library("kernel", Glob("*.c"))
+env.Assemble("multiboot.o", "multiboot.s")
+env.Kernel("kernel.bin", ["multiboot.o", "libkernel.a", "libklib.a"])

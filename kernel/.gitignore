@@ -4,3 +4,5 @@
 /boot.elf
 /scheduler.elf
 /.ycm*
+/*.a
+/*.bin

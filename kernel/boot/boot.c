@@ -5,7 +5,9 @@
 #include "klib/lapic.h"
 #include "ioapic.h"
 
+const uint8_t scheduler_image[] = {
 #include "../images/scheduler.h"
+};
 
 void test(uint64_t vector, uint64_t excode, uint64_t ret_task) {
     void (*transfer)(uint64_t, uint64_t) = (void *)0xffffffffffe00000;
@@ -45,6 +47,8 @@ void _start() {
 
     ioapic_init();
 
+    d_printf("boot initialization completed\n");
+
     /* TODO: spawn hardware task */
 
     /* TODO: spawn scheduler task */
@@ -54,7 +58,7 @@ void _start() {
 
     // remove the current thread and swap to the scheduler
     // TODO: release the memory associated with this task!
-    task_state_t *ts = task_create(scheduler_elf, 0x10000);
+    task_state_t *ts = task_create(scheduler_image, 0x10000);
     void (*transfer)(uint64_t, uint64_t) = (void *)0xffffffffffe00000;
     transfer(0, (uint64_t)ts);
 
