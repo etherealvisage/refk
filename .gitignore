@@ -1,2 +1,5 @@
 *.o
-.sconsign.dblite
+/.sconsign.dblite
+/.gdb_history
+/ints
+/serial
