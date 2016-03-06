@@ -41,6 +41,10 @@ typedef struct task_state_t {
     uint64_t gs_base;       // 25
     uint64_t cr3;           // 26
     uint64_t state;         // 27
+    uint64_t pad1;          // 28
+    uint64_t pad2;          // 29
+    uint64_t pad3;          // 30
+    uint64_t pad4;          // 31
 } task_state_t;
 
 task_state_t *task_create(void);

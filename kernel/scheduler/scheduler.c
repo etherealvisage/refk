@@ -8,15 +8,6 @@
 
 char tick_stack[1024];
 
-void test_delta() {
-    struct task_state_t *test1 = (void *)(0xffff800000e00000);
-    struct task_state_t *test2 = (void *)(0xffff800000e03000);
-
-    int64_t delta = test1 - test2;
-
-    d_printf("delta: %x\n", delta);
-}
-
 static void tick(uint64_t vector, uint64_t excode, task_state_t *ret_task) {
     void (*transfer)(uint64_t, task_state_t *) = (void *)0xffffffffffe00000;
 
@@ -32,7 +23,7 @@ static void tick(uint64_t vector, uint64_t excode, task_state_t *ret_task) {
         d_printf("Originally at index %x\n", init);
 
         task_state_t *nts = ret_task;
-        for(int off = 0; off < NUM_TASKS; off ++) {
+        for(int off = 1; off < NUM_TASKS; off ++) {
             int in = (init + off) % NUM_TASKS;
             if(in == 0) continue; // skip task 0
             if((TASK_MEM(in)->state & (TASK_STATE_VALID | TASK_STATE_RUNNABLE))
@@ -42,12 +33,14 @@ static void tick(uint64_t vector, uint64_t excode, task_state_t *ret_task) {
             }
 
             d_printf("Switching to index %x\n", in);
-            nts = ret_task;
+            nts = TASK_MEM(in);
             break;
         }
 
         ret_task = nts;
     }
+
+    d_printf("Switching to task %x\n", ret_task);
 
     lapic_conditional_eoi(vector);
     transfer(0, ret_task);
@@ -76,8 +69,6 @@ static void t2() {
 void _start() {
     d_printf("scheduler!\n");
     lapic_setup();
-
-    test_delta();
 
     kcomm_t *schedin = (void *)COMM_BASE_ADDRESS;
     kcomm_t *schedout = (void *)COMM_BASE_ADDRESS + COMM_OUT_OFFSET;
