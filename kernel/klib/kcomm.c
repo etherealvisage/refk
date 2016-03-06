@@ -9,7 +9,6 @@ struct kcomm_t {
 };
 
 void kcomm_init(kcomm_t *kc, uint64_t length) {
-    d_printf("initializing %p with length 0x%x\n", kc, length);
     kc->total_length = length;
     kc->data_begin = sizeof(kcomm_t);
     kc->data_length = length - kc->data_begin;

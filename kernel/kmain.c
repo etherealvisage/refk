@@ -51,7 +51,8 @@ void kmain(uint64_t *mem) {
 
     void (*transfer)(void *, void *) = (void *)0xffffffffffe00000;
 
-    task_state_t *task = task_create(boot_image, 0x10000);
+    task_state_t *task = task_create();
+    task_load_elf(task, boot_image, 0x10000);
 
     transfer(0, task);
 

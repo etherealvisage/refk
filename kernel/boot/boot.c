@@ -3,7 +3,10 @@
 #include "klib/task.h"
 #include "klib/desc.h"
 #include "klib/lapic.h"
+#include "klib/kcomm.h"
 #include "ioapic.h"
+
+#include "../scheduler/scheduler.h"
 
 const uint8_t scheduler_image[] = {
 #include "../images/scheduler.h"
@@ -49,27 +52,31 @@ void _start() {
 
     d_printf("boot initialization completed\n");
 
-    /* TODO: spawn hardware task */
+    // use TASK_MEM(1) for scheduler task
+    task_load_elf(TASK_MEM(1), scheduler_image, 0x10000);
 
-    /* TODO: spawn scheduler task */
-    // XXX: this relies on behaviour of the task_create function to pick the
-    // numerically-lowest available ID!
-    TASK_MEM(1)->state &= ~TASK_STATE_VALID;
+    // set up initial scheduler communication page
+    uint64_t schpg = kmem_getpage();
+    kmem_map(TASK_MEM(1)->cr3, COMM_BASE_ADDRESS, schpg, KMEM_MAP_DATA);
+    kmem_map(kmem_current(), COMM_BASE_ADDRESS, schpg, KMEM_MAP_DATA);
+
+    kcomm_t *schedin = (void *)COMM_BASE_ADDRESS;
+    kcomm_init(schedin, 0x800);
+    kcomm_t *schedout = (void *)COMM_BASE_ADDRESS + COMM_OUT_OFFSET;
+    kcomm_init(schedout, 0x800);
+
+    uint64_t data = 0x42;
+    kcomm_put(schedin, &data, 8);
+
+    // use TASK_MEM(2) for memory manager task
+    task_load_elf(TASK_MEM(2), scheduler_image, 0x10000);
+
+    /* TODO: spawn hardware task */
 
     // remove the current thread and swap to the scheduler
     // TODO: release the memory associated with this task!
-    task_state_t *ts = task_create(scheduler_image, 0x10000);
-    void (*transfer)(uint64_t, uint64_t) = (void *)0xffffffffffe00000;
-    transfer(0, (uint64_t)ts);
-
-    /*{
-        d_printf("state: %x\n", TASK_MEM(0)->state);
-        task_state_t *irqts = task_create_local(irq_handler, irq_stack + 1024);
-        d_printf("irqts: %x\n", irqts);
-        for(int i = 0x80; i <= 0x98; i ++) {
-            DESC_INT_TASKS_MEM[i] = (uint64_t)irqts;
-        }
-    }*/
+    void (*transfer)(void *, void *) = (void *)0xffffffffffe00000;
+    transfer(TASK_MEM(3), TASK_MEM(1));
 
     __asm__("sti");
 

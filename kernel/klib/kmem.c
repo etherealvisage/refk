@@ -86,8 +86,8 @@ static uint64_t kmem_paging_addr_create(uint64_t root, uint64_t vaddr,
 }
 
 uint64_t kmem_current() {
-    uint64_t current;
-    __asm__ __volatile__ ("mov rax, cr3" : "=a"(current));
+    uint64_t current = 0;
+    __asm__ __volatile__ ("mov %%cr3, %%rax" : "=a"(current));
     return current;
 }
 

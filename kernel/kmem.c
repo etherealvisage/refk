@@ -40,7 +40,7 @@ void kmem_init(uint64_t *regions) {
     }
 
     // get boot CR3 value
-    __asm__ __volatile__ ("mov rax, cr3" : "=a"(boot_cr3));
+    boot_cr3 = kmem_current();
 
     // swap to global "last used" memory location
     kmem_map(boot_cr3, KMEM_BASE_ADDR, kmem_getpage(), KMEM_MAP_DEFAULT);

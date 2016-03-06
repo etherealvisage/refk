@@ -1,5 +1,5 @@
-#ifndef DESC_H
-#define DESC_H
+#ifndef KLIB_DESC_H
+#define KLIB_DESC_H
 
 #define DESC_BASE 0xffffffffffc00000
 #define DESC_GDT_ADDR (DESC_BASE)

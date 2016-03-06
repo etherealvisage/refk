@@ -1,0 +1,4 @@
+Task list:
+- 0 is reserved
+- 1 is the scheduler/message router
+- 2 is the memory manager

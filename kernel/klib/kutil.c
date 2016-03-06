@@ -9,13 +9,13 @@
 #define PORT_BASE 0x3f8
 
 uint8_t kinb(uint16_t port) {
-    uint8_t ret;
-    __asm__("in %%al, (%%dx)" : "=a"(ret) : "d"(port));
+    uint8_t ret = 0;
+    __asm__("inb (%%dx), %%al" : "=a"(ret) : "d"(port));
     return ret;
 }
 
 void koutb(uint16_t port, uint8_t value) {
-    __asm__("outb (%%dx), %%al" : : "a"(value), "d"(port));
+    __asm__("outb %%al, (%%dx)" : : "a"(value), "d"(port));
 }
 
 void d_putchar(char c) {

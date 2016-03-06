@@ -77,7 +77,7 @@ void desc_init() {
         uint8_t gdt_pointer[10];
         *(uint16_t *)gdt_pointer = 0xffff;
         *(uint64_t *)(gdt_pointer+2) = DESC_GDT_ADDR;
-        __asm__ __volatile__("lgdt [rax]" : : "a"(&gdt_pointer));
+        __asm__ __volatile__("lgdt 0(%%rax)" : : "a"(&gdt_pointer));
     }
 
     uint64_t idt_page = kmem_getpage();
@@ -107,7 +107,7 @@ void desc_init() {
         uint8_t idt_pointer[10];
         *(uint16_t *)idt_pointer = 0xffff;
         *(uint64_t *)(idt_pointer+2) = DESC_IDT_ADDR;
-        __asm__ __volatile__("lidt [rax]" : : "a"(&idt_pointer));
+        __asm__ __volatile__("lidt 0(%%rax)" : : "a"(&idt_pointer));
     }
 
 }

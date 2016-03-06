@@ -17,9 +17,23 @@ static task_state_t *find_available() {
     return ts;
 }
 
-task_state_t *task_create(const void *elf_image, uint64_t stack_size) {
+task_state_t *task_create() {
     task_state_t *ts = find_available();
     if(!ts) return 0;
+    
+    ts->cs = 0x08;
+    ts->ds = 0x10;
+    ts->es = 0x10;
+    ts->fs = 0x10;
+    ts->gs = 0x10;
+    ts->ss = 0x10;
+    ts->rflags = 0x2; // TODO: make this more sensible
+
+    return ts;
+}
+
+void task_load_elf(task_state_t *ts, const void *elf_image,
+    uint64_t stack_size) {
 
     ts->cr3 = kmem_create_root();
 
@@ -34,13 +48,6 @@ task_state_t *task_create(const void *elf_image, uint64_t stack_size) {
         kmem_map(ts->cr3, stack_bottom, page, KMEM_MAP_DATA);
     }
 
-    ts->cs = 0x08;
-    ts->ds = 0x10;
-    ts->es = 0x10;
-    ts->fs = 0x10;
-    ts->gs = 0x10;
-    ts->ss = 0x10;
-    ts->rflags = 0x2; // TODO: make this more sensible
     ts->rsp = DEFAULT_TASK_STACK_TOP;
 
     // map in ELF
@@ -76,26 +83,16 @@ task_state_t *task_create(const void *elf_image, uint64_t stack_size) {
 
     ts->rip = header->e_entry;
     ts->state = TASK_STATE_VALID;
-
-    return ts;
 }
 
-task_state_t *task_create_local(void *entry, void *stack_top) {
-    task_state_t *ts = find_available();
-    if(!ts) return 0;
-
+void task_set_local(task_state_t *ts, void *entry, void *stack_top) {
     ts->cr3 = kmem_current();
 
-    ts->cs = 0x08;
-    ts->ds = 0x10;
-    ts->es = 0x10;
-    ts->fs = 0x10;
-    ts->gs = 0x10;
-    ts->ss = 0x10;
-    ts->rflags = 0x2; // TODO: make this more sensible
     ts->rsp = (uint64_t)stack_top;
     ts->rip = (uint64_t)entry;
     ts->state = TASK_STATE_VALID;
+}
 
-    return ts;
+void task_mark_runnable(task_state_t *ts) {
+    ts->state |= TASK_STATE_RUNNABLE;
 }

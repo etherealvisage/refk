@@ -12,7 +12,7 @@
 #define TASK_STATE_VALID    0x01
 #define TASK_STATE_RUNNABLE 0x02
 
-typedef struct {
+typedef struct task_state_t {
     uint64_t rax;           // 0
     uint64_t rbx;           // 1
     uint64_t rcx;           // 2
@@ -43,7 +43,12 @@ typedef struct {
     uint64_t state;         // 27
 } task_state_t;
 
-task_state_t *task_create(const void *elf_image, uint64_t stack_size);
-task_state_t *task_create_local(void *entry, void *stack_top);
+task_state_t *task_create(void);
+
+void task_load_elf(task_state_t *ts, const void *elf_image,
+    uint64_t stack_size);
+void task_set_local(task_state_t *ts, void *entry, void *stack_top);
+
+void task_mark_runnable(task_state_t *ts);
 
 #endif
