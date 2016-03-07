@@ -1,8 +1,3 @@
-/kernel.bin
-/depend
-/libklib.a
-/boot.elf
-/scheduler.elf
-/.ycm*
 /*.a
 /*.bin
+/*.elf

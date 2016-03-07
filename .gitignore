@@ -3,3 +3,5 @@
 /.gdb_history
 /ints
 /serial
+*.swp
+.ycm*
