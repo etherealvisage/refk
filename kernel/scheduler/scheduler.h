@@ -57,7 +57,7 @@ typedef struct comm_in_packet_t {
             char message[32];
         } forward;
         struct {
-            task_state_t *task;
+            uint64_t task_id;
             char name[32];
         } set_name;
         struct {
@@ -67,7 +67,7 @@ typedef struct comm_in_packet_t {
             uint64_t cr3;
         } spawn;
         struct {
-            task_state_t *task;
+            uint64_t task_id;
             uint64_t index;
             uint64_t value;
         } set_state;
@@ -79,10 +79,10 @@ typedef struct comm_out_packet_t {
     uint64_t req_id;
     union {
         struct {
-            task_state_t *task;
+            uint64_t task_id;
         } get_named;
         struct {
-            task_state_t *task;
+            uint64_t task_id;
         } spawn;
     };
 } comm_out_packet_t;

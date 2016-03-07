@@ -75,6 +75,7 @@ def gcc(env):
     env.Append(CFLAGS = "-Werror -Wno-error=unused-variable -Wno-error=unused-function")
     env.Append(CFLAGS = "-Wno-error=unused-parameter")
     env.Append(CFLAGS = "-I kernel/")
+    env.Append(CFLAGS = "-fdiagnostics-color=always")
 
 def clang(env):
     env.Replace(CC = "clang")

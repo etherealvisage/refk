@@ -11,6 +11,7 @@
 
 char tick_stack[1024];
 
+avl_tree_t task_map;
 avl_tree_t named_tasks;
 
 static void tick(uint64_t vector, uint64_t excode, task_state_t *ret_task) {
@@ -83,9 +84,9 @@ static void spawner() {
     uint64_t result_size;
     while(kcomm_get(schedout, &out, &result_size)) ;
 
-    task_state_t *ts = out.spawn.task;
+    uint64_t tid = out.spawn.task_id;
     in.type = COMM_SET_STATE;
-    in.set_state.task = ts;
+    in.set_state.task_id = tid;
 #define SET(index_, value_) \
     in.set_state.index = index_; \
     in.set_state.value = (uint64_t)value_; \
@@ -105,9 +106,9 @@ static void spawner() {
 
     while(kcomm_get(schedout, &out, &result_size)) ;
 
-    ts = out.spawn.task;
+    tid = out.spawn.task_id;
     in.type = COMM_SET_STATE;
-    in.set_state.task = ts;
+    in.set_state.task_id = tid;
 
     SET(COMM_STATE_RIP, t2)
     SET(COMM_STATE_RSP, t2_stack + 1024)
@@ -117,7 +118,7 @@ static void spawner() {
 
     in.type = COMM_SET_NAME;
     memcpy(in.set_name.name, "t2", 8);
-    in.set_name.task = ts;
+    in.set_name.task_id = tid;
     kcomm_put(schedin, &in, sizeof(in));
 
     in.type = COMM_GET_NAMED;
@@ -129,10 +130,16 @@ static void spawner() {
     while(kcomm_get(schedout, &out, &result_size)) ;
 
     d_printf("Received result!\n");
-    d_printf("task: %x\n", out.get_named.task);
-    d_printf("t2: %x\n", ts);
+    d_printf("task: %x\n", out.get_named.task_id);
+    d_printf("t2: %x\n", tid);
 
     while(1) {}
+}
+
+static int plt(void *a, void *b) {
+    if(a == b) return 0;
+    if(a < b) return -1;
+    return 1;
 }
 
 void listen() {
@@ -140,7 +147,10 @@ void listen() {
     kcomm_t *schedin = (void *)COMM_BASE_ADDRESS;
     kcomm_t *schedout = (void *)COMM_BASE_ADDRESS + COMM_OUT_OFFSET;
 
+    avl_initialize(&task_map, plt, 0);
     avl_initialize(&named_tasks, (avl_comparator_t)strcmp, sheap_free);
+
+    uint64_t next_task_id = 1023;
 
     comm_in_packet_t in;
     comm_out_packet_t out;
@@ -156,7 +166,7 @@ void listen() {
             char *key = sheap_alloc(32);
             memcpy(key, in.set_name.name, 32);
             key[31] = 0;
-            avl_insert(&named_tasks, in.set_name.name, in.set_name.task);
+            avl_insert(&named_tasks, in.set_name.name, (void *)in.set_name.task_id);
             break;
         }
         case COMM_GET_NAMED: {
@@ -167,23 +177,28 @@ void listen() {
             sheap_free(key);
             out.type = COMM_GET_NAMED;
             out.req_id = in.req_id;
-            out.get_named.task = result;
+            out.get_named.task_id = (uint64_t)result;
             kcomm_put(schedout, &out, sizeof(out));
             break;
         }
         case COMM_SPAWN: {
             task_state_t *ts = task_create();
+            avl_insert(&task_map, ts, (void *)next_task_id);
+            next_task_id += 0x1234;
             ts->cr3 = in.spawn.cr3;
             out.req_id = in.req_id;
             out.type = COMM_SPAWN;
-            out.spawn.task = ts;
+            out.spawn.task_id = next_task_id;
             kcomm_put(schedout, &out, sizeof(out));
             break;
         }
         case COMM_SET_STATE: {
-            task_state_t *ts = in.set_state.task;
-            uint64_t *indexed = (void *)ts;
-            indexed[in.set_state.index] = in.set_state.value;
+            uint64_t task_id = in.set_state.task_id;
+            task_state_t *ts = avl_search(&task_map, (void *)task_id);
+            if(ts) {
+                uint64_t *indexed = (void *)ts;
+                indexed[in.set_state.index] = in.set_state.value;
+            }
             break;
         }
         default:

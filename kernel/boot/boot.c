@@ -57,11 +57,8 @@ void _start() {
 
     kcomm_t *schedin = (void *)COMM_BASE_ADDRESS;
     kcomm_init(schedin, 0x800);
-    kcomm_t *schedout = (void *)COMM_BASE_ADDRESS + COMM_OUT_OFFSET;
+    kcomm_t *schedout = (void *)(COMM_BASE_ADDRESS + COMM_OUT_OFFSET);
     kcomm_init(schedout, 0x800);
-
-    // use TASK_MEM(2) for memory manager task
-    //task_load_elf(TASK_MEM(2), scheduler_image, 0x10000);
 
     /* TODO: spawn hardware task */
 
@@ -69,8 +66,6 @@ void _start() {
     // TODO: release the memory associated with this task!
     void (*transfer)(void *, void *) = (void *)0xffffffffffe00000;
     transfer(0, TASK_MEM(1));
-
-    //__asm__("sti");
 
     // TODO: delete task
     while(1) {}
