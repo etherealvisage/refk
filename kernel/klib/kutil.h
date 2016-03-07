@@ -36,4 +36,7 @@ void *memset(void *memory, uint8_t v, uint64_t count);
 void *memcpy(void *dest, const void *src, uint64_t count);
 void *memmove(void *dest, const void *src, uint64_t count);
 
+// string handling functions
+int strcmp(const char *s1, const char *s2);
+
 #endif

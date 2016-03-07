@@ -12,13 +12,6 @@ const uint8_t scheduler_image[] = {
 #include "../images/scheduler.h"
 };
 
-void test(uint64_t vector, uint64_t excode, uint64_t ret_task) {
-    void (*transfer)(uint64_t, uint64_t) = (void *)0xffffffffffe00000;
-
-    transfer(0, ret_task);
-    while(1) {}
-}
-
 void irq_handler(uint64_t vector, uint64_t excode, uint64_t ret_task) {
     void (*transfer)(uint64_t, uint64_t) = (void *)0xffffffffffe00000;
 
@@ -48,6 +41,8 @@ void _start() {
     lapic_init();
     lapic_setup();
 
+    // TODO: perform early ACPI tables read for I/O APIC information
+
     ioapic_init();
 
     d_printf("boot initialization completed\n");
@@ -65,20 +60,17 @@ void _start() {
     kcomm_t *schedout = (void *)COMM_BASE_ADDRESS + COMM_OUT_OFFSET;
     kcomm_init(schedout, 0x800);
 
-    uint64_t data = 0x42;
-    kcomm_put(schedin, &data, 8);
-
     // use TASK_MEM(2) for memory manager task
-    task_load_elf(TASK_MEM(2), scheduler_image, 0x10000);
+    //task_load_elf(TASK_MEM(2), scheduler_image, 0x10000);
 
     /* TODO: spawn hardware task */
 
     // remove the current thread and swap to the scheduler
     // TODO: release the memory associated with this task!
     void (*transfer)(void *, void *) = (void *)0xffffffffffe00000;
-    transfer(TASK_MEM(3), TASK_MEM(1));
+    transfer(0, TASK_MEM(1));
 
-    __asm__("sti");
+    //__asm__("sti");
 
     // TODO: delete task
     while(1) {}

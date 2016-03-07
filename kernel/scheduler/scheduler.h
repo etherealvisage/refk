@@ -10,6 +10,8 @@
 
 enum {
     COMM_FORWARD,
+    COMM_SET_NAME,
+    COMM_GET_NAMED,
     COMM_SPAWN,
     COMM_SET_STATE,
 };
@@ -47,6 +49,7 @@ enum {
 
 typedef struct comm_in_packet_t {
     uint8_t type;
+    uint64_t req_id;
     union {
         struct {
             uint64_t to;
@@ -54,10 +57,17 @@ typedef struct comm_in_packet_t {
             char message[32];
         } forward;
         struct {
+            task_state_t *task;
+            char name[32];
+        } set_name;
+        struct {
+            char name[32];
+        } get_named;
+        struct {
             uint64_t cr3;
         } spawn;
         struct {
-            task_state_t *state;
+            task_state_t *task;
             uint64_t index;
             uint64_t value;
         } set_state;
@@ -66,7 +76,11 @@ typedef struct comm_in_packet_t {
 
 typedef struct comm_out_packet_t {
     uint8_t type;
+    uint64_t req_id;
     union {
+        struct {
+            task_state_t *task;
+        } get_named;
         struct {
             task_state_t *task;
         } spawn;

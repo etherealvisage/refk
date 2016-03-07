@@ -96,4 +96,4 @@ else:
 
 Export("env")
 
-SConscript(dirs=["kernel"])
+SConscript(dirs=["kernel", "rlib"])
