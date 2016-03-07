@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+Import("env")
+
+rlib_sources = Glob("*.c")
+env.Library("rlib", rlib_sources)
