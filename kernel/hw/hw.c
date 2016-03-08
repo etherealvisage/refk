@@ -3,8 +3,17 @@
 
 #include "../scheduler/interface.h"
 
+#include "acpica/platform/acenv.h"
+#include "acpica/acpi.h"
+
+/*
+    General outline:
+    - parse ACPI tables
+    - set up ACPICA
+    - begin answering queries
+*/
+
 void _start(kcomm_t *sin, kcomm_t *sout) {
-    __asm__("sti");
     d_printf("sin: %x\n", sin);
     d_printf("sout: %x\n", sout);
 
@@ -27,6 +36,16 @@ void _start(kcomm_t *sin, kcomm_t *sout) {
     while(kcomm_get(sout, &out, &len)) {}
 
     d_printf("Own ID: %x\n", out.get_named.task_id);
+
+    ACPI_TABLE_DESC tables[32];
+    AcpiInitializeTables(tables, 32, 0);
+
+    d_printf("we have the tables!\n");
+    for(int i = 0; i < 32; i ++) {
+        d_printf("address: %x\n", tables[0].Address);
+    }
+
+    //AcpiInitializeSubsystem();
 
     while(1) {}
 }
