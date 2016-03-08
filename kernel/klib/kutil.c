@@ -150,6 +150,12 @@ void *memmove(void *dest, const void *src, uint64_t count) {
     return dest;
 }
 
+uint64_t strlen(const char *s) {
+    uint64_t ret = 0;
+    while(*s) ret ++, s ++;
+    return ret;
+}
+
 int strcmp(const char *s1, const char *s2) {
     while(1) {
         if(*s1 == 0 && *s2 == 0) return 0;

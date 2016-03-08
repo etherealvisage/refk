@@ -6,7 +6,7 @@
 #include "mman.h"
 
 // memory management data structures
-avl_tree_t memory_roots;
+avl_tree_t root_map;
 avl_tree_t root_refcount;
 avl_tree_t page_refcount;
 
@@ -21,12 +21,17 @@ void mman_init(uint64_t bootproc_cr3) {
     d_printf("mman_init()\n");
     kmem_setup();
 
-    avl_initialize(&memory_roots, avl_ptrcmp, 0);
+    avl_initialize(&root_map, avl_ptrcmp, 0);
     avl_initialize(&root_refcount, avl_ptrcmp, 0);
     avl_initialize(&page_refcount, avl_ptrcmp, 0);
 
-    import_root(bootproc_cr3);
     this_root_id = import_root(kmem_current());
+    mman_increment_root(this_root_id);
+
+    // release memory from boot process
+    uint64_t bootproc_id = import_root(bootproc_cr3);
+    mman_increment_root(bootproc_id);
+    mman_decrement_root(bootproc_id);
 }
 
 static uint64_t paging_addr_create(uint64_t root_address, uint64_t vaddr,
@@ -58,7 +63,7 @@ static uint64_t paging_addr_create(uint64_t root_address, uint64_t vaddr,
 
 int mman_anonymous(uint64_t root_id, uint64_t address, uint64_t size) {
     uint64_t root_address =
-        (uint64_t)avl_search(&memory_roots, (void *)root_id);
+        (uint64_t)avl_search(&root_map, (void *)root_id);
     if(root_address == 0) return -1;
 
     if(address & 0xfff) return -1;
@@ -80,7 +85,7 @@ int mman_physical(uint64_t root_id, uint64_t address, uint64_t paddress,
     uint64_t size) {
 
     uint64_t root_address =
-        (uint64_t)avl_search(&memory_roots, (void *)root_id);
+        (uint64_t)avl_search(&root_map, (void *)root_id);
     if(root_address == 0) return -1;
 
     if(address & 0xfff) return -1;
@@ -100,7 +105,7 @@ int mman_physical(uint64_t root_id, uint64_t address, uint64_t paddress,
 
 int mman_check_all_mapped(uint64_t root_id, uint64_t address, uint64_t size) {
     uint64_t root_address =
-        (uint64_t)avl_search(&memory_roots, (void *)root_id);
+        (uint64_t)avl_search(&root_map, (void *)root_id);
     if(root_address == 0) return -1;
 
     if(address & 0xfff) return -1;
@@ -127,7 +132,7 @@ int mman_check_all_mapped(uint64_t root_id, uint64_t address, uint64_t size) {
 
 int mman_check_any_mapped(uint64_t root_id, uint64_t address, uint64_t size) {
     uint64_t root_address =
-        (uint64_t)avl_search(&memory_roots, (void *)root_id);
+        (uint64_t)avl_search(&root_map, (void *)root_id);
     if(root_address == 0) return -1;
 
     if(address & 0xfff) return -1;
@@ -151,11 +156,11 @@ int mman_mirror(uint64_t root_id, uint64_t address, uint64_t sroot_id,
     uint64_t saddress, uint64_t size) {
 
     uint64_t root_address =
-        (uint64_t)avl_search(&memory_roots, (void *)root_id);
+        (uint64_t)avl_search(&root_map, (void *)root_id);
     if(root_address == 0) return -1;
 
     uint64_t sroot_address =
-        (uint64_t)avl_search(&memory_roots, (void *)sroot_id);
+        (uint64_t)avl_search(&root_map, (void *)sroot_id);
     if(sroot_address == 0) return -1;
 
     if(mman_check_any_mapped(root_id, address, size) != 0) return 1;
@@ -179,7 +184,7 @@ int mman_mirror(uint64_t root_id, uint64_t address, uint64_t sroot_id,
 
 int mman_unmap(uint64_t root_id, uint64_t address, uint64_t size) {
     uint64_t root_address =
-        (uint64_t)avl_search(&memory_roots, (void *)root_id);
+        (uint64_t)avl_search(&root_map, (void *)root_id);
     if(root_address == 0) return -1;
 
     if(address & 0xfff) return -1;
@@ -207,7 +212,7 @@ int mman_protect(uint64_t root_id, uint64_t address, uint64_t size,
     uint64_t flags) {
 
     uint64_t root_address =
-        (uint64_t)avl_search(&memory_roots, (void *)root_id);
+        (uint64_t)avl_search(&root_map, (void *)root_id);
     if(root_address == 0) return -1;
 
     if(address & 0xfff) return -1;
@@ -263,6 +268,10 @@ uint64_t mman_make_root() {
     return import_root(address);
 }
 
+uint64_t mman_import_root(uint64_t cr3) {
+    return import_root(cr3);
+}
+
 void mman_increment_root(uint64_t root) {
     uint64_t current = (uint64_t)avl_search(&root_refcount, (void *)root);
     avl_insert(&root_refcount, (void *)root, (void *)(current + 1));
@@ -296,12 +305,20 @@ void mman_decrement_root(uint64_t root) {
     }
     else {
         avl_remove(&root_refcount, (void *)root);
-        uint64_t cr3 = (uint64_t)avl_remove(&memory_roots, (void *)root);
+        uint64_t cr3 = (uint64_t)avl_remove(&root_map, (void *)root);
         remove_helper(cr3, 0);
 
         decrement_page(cr3);
         d_printf("Removed root with CR3 %x\n", cr3);
     }
+}
+
+int mman_is_root(uint64_t root) {
+    return !!avl_search(&root_map, (void *)root);
+}
+
+uint64_t mman_get_root_cr3(uint64_t root) {
+    return (uint64_t)avl_search(&root_map, (void *)root);
 }
 
 static void import_helper(uint64_t root, int level) {
@@ -329,8 +346,7 @@ static uint64_t import_root(uint64_t root) {
     import_helper(root, 0);
 
     uint64_t id = gen_id();
-    avl_insert(&memory_roots, (void *)id, (void *)root);
-    mman_increment_root(id);
+    avl_insert(&root_map, (void *)id, (void *)root);
 
     return id;
 }

@@ -15,6 +15,11 @@ env.Library("scheduler", scheduler_sources)
 env.KernelProc("scheduler.elf", ["libscheduler.a", "libklib.a"])
 env.Image("images/scheduler.h", "scheduler.elf")
 
+hw_sources = Glob("hw/*.c")
+env.Library("hw", hw_sources)
+env.KernelProc("hw.elf", ["libhw.a", "libklib.a"])
+env.Image("images/hw.h", "hw.elf")
+
 boot_sources = Glob("boot/*.c")
 env.Library("boot", boot_sources)
 env.KernelProc("boot.elf", ["libboot.a", "libklib.a"])

@@ -9,91 +9,104 @@
 #include "interface.h"
 #include "id.h"
 #include "mman.h"
+#include "task.h"
 
-#define CHANNEL_BASE 0xcadd40000
-#define CHANNEL_SIZE 0x1000
+typedef struct {
+    uint64_t task_id;
+    kcomm_t *in, *out;
+} queue_entry;
+
+queue_entry queue[100];
+int queue_size;
+
+static void remove_from_queue(uint64_t id);
 
 // task data structures
-avl_tree_t task_map;
-avl_tree_t named_tasks;
-
-static void process(kcomm_t *schedin, kcomm_t *schedout) {
-    comm_in_packet_t in;
-    comm_out_packet_t out;
-    while(1) {
-        uint64_t in_size;
-        if(kcomm_get(schedin, &in, &in_size)) continue;
-
+static void process(queue_entry *q) {
+    sched_in_packet_t in;
+    sched_out_packet_t out;
+    uint64_t in_size;
+    while(!kcomm_get(q->in, &in, &in_size)) {
+        d_printf("Received!\n");
         switch(in.type) {
-        case COMM_SET_NAME: {
-            char *key = sheap_alloc(32);
-            memcpy(key, in.set_name.name, 32);
-            key[31] = 0;
-            avl_insert(&named_tasks, in.set_name.name,
-                (void *)in.set_name.task_id);
+        case SCHED_SET_NAME: {
+            in.set_name.name[31] = 0;
+            uint64_t id = in.set_name.task_id;
+            if(id == 0) id = q->task_id;
+            sched_set_name(id, in.set_name.name);
             break;
         }
-        case COMM_GET_NAMED: {
-            char *key = sheap_alloc(32);
-            memcpy(key, in.get_named.name, 32);
-            key[31] = 0;
-            void *result = avl_search(&named_tasks, key);
-            sheap_free(key);
-            out.type = COMM_GET_NAMED;
+        case SCHED_GET_NAMED: {
+            in.get_named.name[31] = 0;
+            out.type = SCHED_GET_NAMED;
+            out.get_named.task_id = sched_named_task(in.get_named.name);
+            kcomm_put(q->out, &out, sizeof(out));
+            break;
+        }
+        case SCHED_SPAWN: {
+            uint64_t root_id = in.spawn.root_id;
+            kcomm_t *sin, *sout;
+            uint64_t task_id = sched_task_create(root_id, &sin, &sout);
+
+            out.type = SCHED_SPAWN;
             out.req_id = in.req_id;
-            out.get_named.task_id = (uint64_t)result;
-            kcomm_put(schedout, &out, sizeof(out));
+            out.spawn.root_id = root_id;
+            out.spawn.task_id = task_id;
+
+            queue[queue_size].task_id = task_id;
+            queue[queue_size].in = sin;
+            queue[queue_size].out = sout;
+            queue_size ++;
+
+            kcomm_put(q->out, &out, sizeof(out));
             break;
         }
-        case COMM_SPAWN: {
-            task_state_t *ts = task_create();
-            uint64_t nid = gen_id();
-            avl_insert(&task_map, ts, (void *)nid);
-            ts->cr3 = in.spawn.cr3;
-            out.req_id = in.req_id;
-            out.type = COMM_SPAWN;
-            out.spawn.task_id = nid;
-            kcomm_put(schedout, &out, sizeof(out));
+        case SCHED_SET_STATE: {
+            sched_set_state(in.set_state.task_id, in.set_state.index,
+                in.set_state.value);
             break;
         }
-        case COMM_SET_STATE: {
-            uint64_t task_id = in.set_state.task_id;
-            task_state_t *ts = avl_search(&task_map, (void *)task_id);
-            if(ts) {
-                uint64_t *indexed = (void *)ts;
-                indexed[in.set_state.index] = in.set_state.value;
-            }
+        case SCHED_REAP: {
+            uint64_t id = in.reap.task_id;
+            if(id == 0) id = q->task_id;
+            sched_task_reap(id);
+            remove_from_queue(id);
             break;
         }
         default:
-            d_printf("Unknown comm_in packet type!\n");
+            d_printf("Unknown sched_in packet type!\n");
             break;
         }
     }
 }
 
-void listen() {
-    avl_initialize(&task_map, avl_ptrcmp, 0);
-    avl_initialize(&named_tasks, (avl_comparator_t)strcmp, sheap_free);
+static void remove_from_queue(uint64_t id) {
+    for(int i = 0; i < queue_size; i ++) {
+        if(queue[i].task_id == id) {
+            queue[i] = queue[queue_size-1];
+            queue_size --;
+            break;
+        }
+    }
+}
 
-    mman_anonymous(mman_own_root(), 0x4000, 0x1000);
-    char *ptr = (char *)0x4000;
-    ptr[0] = 0x42;
+void listen(task_state_t *hw_task) {
+    queue_size = 0;
 
-    uint64_t root = mman_make_root();
+    {
+        // add hw task to queue
+        queue[queue_size].task_id = sched_task_attach(hw_task,
+            &queue[queue_size].in, &queue[queue_size].out);
+        queue_size ++;
 
-    mman_mirror(root, 0x8000, mman_own_root(), 0x4000, 0x1000);
-    mman_mirror(mman_own_root(), 0xc000, root, 0x8000, 0x1000);
+        hw_task->state |= TASK_STATE_RUNNABLE;
+    }
 
-
-    char *ptr2 = (char *)0xc000;
-
-    if(ptr2[0] == ptr[0]) d_printf("mirror success!\n");
-
-    mman_unmap(mman_own_root(), 0x4000, 0x1000);
-    mman_unmap(mman_own_root(), 0xc000, 0x1000);
-
-    mman_decrement_root(root);
-
-    while(1) {}
+    d_printf("Total number of queue entries: %x\n", queue_size);
+    while(1) {
+        for(int i = 0; i < queue_size; i ++) {
+            process(queue + i);
+        }
+        // TODO: yield timeslice here
+    }
 }

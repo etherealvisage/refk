@@ -12,6 +12,10 @@ const uint8_t scheduler_image[] = {
 #include "../images/scheduler.h"
 };
 
+const uint8_t hw_image[] = {
+#include "../images/hw.h"
+};
+
 void _start() {
     kmem_setup();
 
@@ -28,8 +32,16 @@ void _start() {
     task_load_elf(TASK_MEM(1), scheduler_image, 0x10000);
     // pass in the root CR3 for the boot process
     TASK_MEM(1)->rdi = kmem_current();
-    /* TODO: spawn hardware task */
-    // TODO: pass in the root CR3 for the hardware process
+    // use TASK_MEM(2) for hw task
+
+    task_state_t *hwts = task_create();
+    *TASK_MEM(2) = *hwts;
+    hwts->state = 0;
+    hwts = TASK_MEM(2);
+    task_load_elf(hwts, hw_image, 0x10000);
+
+    // pass in the task state for the hw thread into the scheduler
+    TASK_MEM(1)->rsi = (uint64_t)TASK_MEM(2);
 
     // remove the current thread and swap to the scheduler
     void (*transfer)(void *, void *) = (void *)0xffffffffffe00000;

@@ -42,15 +42,14 @@ static void tick(uint64_t vector, uint64_t __attribute__((unused)) excode,
     transfer(0, ret_task);
 }
 
-
-void _start(uint64_t bootproc_cr3) {
+void _start(uint64_t bootproc_cr3, task_state_t *hw_task) {
     d_printf("scheduler!\n");
     lapic_setup();
     sheap_init();
 
     // init local components
-    task_init();
     mman_init(bootproc_cr3);
+    task_init();
 
     task_state_t *tick_ts = task_create();
     task_set_local(tick_ts, tick, tick_stack + 1024);
@@ -60,10 +59,9 @@ void _start(uint64_t bootproc_cr3) {
     // the scheduler uses task #1.
     TASK_MEM(1)->state = TASK_STATE_VALID | TASK_STATE_RUNNABLE;
 
-    //while(1) {}
     __asm__("sti");
 
-    listen();
+    listen(hw_task);
 
     while(1) {}
 }

@@ -4,46 +4,45 @@
 #include <stdint.h>
 
 enum {
-    COMM_SET_NAME,
-    COMM_GET_NAMED,
-    COMM_MAKE_ROOT,
-    COMM_SPAWN,
-    COMM_SET_STATE,
-    COMM_REAP,
+    SCHED_SET_NAME,
+    SCHED_GET_NAMED,
+    SCHED_SPAWN,
+    SCHED_SET_STATE,
+    SCHED_REAP,
 };
 
 enum {
-    COMM_STATE_RAX,
-    COMM_STATE_RBX,
-    COMM_STATE_RCX,
-    COMM_STATE_RDX,
-    COMM_STATE_RSI,
-    COMM_STATE_RDI,
-    COMM_STATE_RSP,
-    COMM_STATE_RBP,
-    COMM_STATE_R8,
-    COMM_STATE_R9,
-    COMM_STATE_R10,
-    COMM_STATE_R11,
-    COMM_STATE_R12,
-    COMM_STATE_R13,
-    COMM_STATE_R14,
-    COMM_STATE_R15,
-    COMM_STATE_RFLAGS,
-    COMM_STATE_RIP,
-    COMM_STATE_CS,
-    COMM_STATE_DS,
-    COMM_STATE_ES,
-    COMM_STATE_FS,
-    COMM_STATE_GS,
-    COMM_STATE_SS,
-    COMM_STATE_FS_BASE,
-    COMM_STATE_GS_BASE,
-    COMM_STATE_CR3,
-    COMM_STATE
+    SCHED_STATE_RAX,
+    SCHED_STATE_RBX,
+    SCHED_STATE_RCX,
+    SCHED_STATE_RDX,
+    SCHED_STATE_RSI,
+    SCHED_STATE_RDI,
+    SCHED_STATE_RSP,
+    SCHED_STATE_RBP,
+    SCHED_STATE_R8,
+    SCHED_STATE_R9,
+    SCHED_STATE_R10,
+    SCHED_STATE_R11,
+    SCHED_STATE_R12,
+    SCHED_STATE_R13,
+    SCHED_STATE_R14,
+    SCHED_STATE_R15,
+    SCHED_STATE_RFLAGS,
+    SCHED_STATE_RIP,
+    SCHED_STATE_CS,
+    SCHED_STATE_DS,
+    SCHED_STATE_ES,
+    SCHED_STATE_FS,
+    SCHED_STATE_GS,
+    SCHED_STATE_SS,
+    SCHED_STATE_FS_BASE,
+    SCHED_STATE_GS_BASE,
+    SCHED_STATE_CR3,
+    SCHED_STATE
 };
 
-typedef struct comm_in_packet_t {
+typedef struct sched_in_packet_t {
     uint8_t type;
     uint64_t req_id;
     union {
@@ -55,7 +54,7 @@ typedef struct comm_in_packet_t {
             char name[32];
         } get_named;
         struct {
-            uint64_t cr3;
+            uint64_t root_id;
         } spawn;
         struct {
             uint64_t task_id;
@@ -66,9 +65,9 @@ typedef struct comm_in_packet_t {
             uint64_t task_id;
         } reap;
     };
-} comm_in_packet_t;
+} sched_in_packet_t;
 
-typedef struct comm_out_packet_t {
+typedef struct sched_out_packet_t {
     uint8_t type;
     uint64_t req_id;
     union {
@@ -77,8 +76,9 @@ typedef struct comm_out_packet_t {
         } get_named;
         struct {
             uint64_t task_id;
+            uint64_t root_id;
         } spawn;
     };
-} comm_out_packet_t;
+} sched_out_packet_t;
 
 #endif
