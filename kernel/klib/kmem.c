@@ -27,8 +27,8 @@ uint64_t kmem_getpage() {
     return ret;
 }
 
-static uint64_t kmem_paging_addr(uint64_t root, uint64_t address,
-    uint8_t level, uint8_t *ok) {
+uint64_t kmem_paging_addr(uint64_t root, uint64_t address, uint8_t level,
+    uint8_t *ok) {
 
     // maps level -> shift
     //          0 -> 39

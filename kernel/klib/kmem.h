@@ -17,6 +17,8 @@ void kmem_setup_bootstrap(uint64_t last);
 void kmem_unuse(uint64_t page);
 uint64_t kmem_getpage(void);
 
+uint64_t kmem_paging_addr(uint64_t root, uint64_t address, uint8_t level,
+    uint8_t *ok);
 uint64_t kmem_current(void);
 uint64_t kmem_create_root(void);
 void kmem_map(uint64_t root, uint64_t vaddr, uint64_t page, uint64_t flags);

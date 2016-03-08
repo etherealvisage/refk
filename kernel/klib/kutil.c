@@ -31,8 +31,8 @@ void d_printf(const char *msg, ...) {
     const char *p = msg;
     while(*p) {
         if(*p == '\n') {
-            d_putchar('\n');
             d_putchar('\r');
+            d_putchar('\n');
             p ++;
         }
         else if(*p == '%' && *(p+1)) {

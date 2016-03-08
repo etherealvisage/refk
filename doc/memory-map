@@ -1,7 +1,7 @@
 0x            10 0000 (size XKB):       initial low-memory location
+0xffff 8000 0000 0000 (size XKB):       per-task storage location
 0xffff c000 0000 0000 (size 4GB):       physical memory map
 0xffff ffff 8000 0000 (size XKB):       initial high-memory location
-0xffff ffff c000 0000 (size XKB):       per-task storage location
 0xffff ffff ffa0 0000 (size 4KB):       Memory manager data (temporary)
 0xffff ffff ffc0 0000 (size 4KB):       GDT location
 0xffff ffff ffc0 1000 (size 4KB):       IDT location

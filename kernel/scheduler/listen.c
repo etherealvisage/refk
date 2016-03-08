@@ -7,6 +7,8 @@
 
 #include "listen.h"
 #include "interface.h"
+#include "id.h"
+#include "mman.h"
 
 #define CHANNEL_BASE 0xcadd40000
 #define CHANNEL_SIZE 0x1000
@@ -14,14 +16,6 @@
 // task data structures
 avl_tree_t task_map;
 avl_tree_t named_tasks;
-
-
-// other state
-uint64_t g_next_id = 0;
-
-static uint64_t next_id() {
-    return ++ g_next_id;
-}
 
 static void process(kcomm_t *schedin, kcomm_t *schedout) {
     comm_in_packet_t in;
@@ -53,7 +47,7 @@ static void process(kcomm_t *schedin, kcomm_t *schedout) {
         }
         case COMM_SPAWN: {
             task_state_t *ts = task_create();
-            uint64_t nid = next_id();
+            uint64_t nid = gen_id();
             avl_insert(&task_map, ts, (void *)nid);
             ts->cr3 = in.spawn.cr3;
             out.req_id = in.req_id;
@@ -82,11 +76,24 @@ void listen() {
     avl_initialize(&task_map, avl_ptrcmp, 0);
     avl_initialize(&named_tasks, (avl_comparator_t)strcmp, sheap_free);
 
-    g_next_id = 0x1000;
+    mman_anonymous(mman_own_root(), 0x4000, 0x1000);
+    char *ptr = (char *)0x4000;
+    ptr[0] = 0x42;
 
-    while(1) {
-        for(int i = 0; i < 0; i ++) {
-            
-        }
-    }
+    uint64_t root = mman_make_root();
+
+    mman_mirror(root, 0x8000, mman_own_root(), 0x4000, 0x1000);
+    mman_mirror(mman_own_root(), 0xc000, root, 0x8000, 0x1000);
+
+
+    char *ptr2 = (char *)0xc000;
+
+    if(ptr2[0] == ptr[0]) d_printf("mirror success!\n");
+
+    mman_unmap(mman_own_root(), 0x4000, 0x1000);
+    mman_unmap(mman_own_root(), 0xc000, 0x1000);
+
+    mman_decrement_root(root);
+
+    while(1) {}
 }
