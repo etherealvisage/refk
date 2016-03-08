@@ -67,9 +67,30 @@ int mman_anonymous(uint64_t root_id, uint64_t address, uint64_t size) {
     while(size > 0) {
         uint64_t eaddr = paging_addr_create(root_address, address, 3);
         uint64_t paddr = kmem_getpage();
-        d_printf("Using page %x in anonymous mapping (written to %x)\n", paddr, eaddr);
         phy_write64(eaddr, paddr | KMEM_MAP_DATA);
         increment_page(paddr);
+        address += 0x1000;
+        size -= 0x1000;
+    }
+
+    return 0;
+}
+
+int mman_physical(uint64_t root_id, uint64_t address, uint64_t paddress,
+    uint64_t size) {
+
+    uint64_t root_address =
+        (uint64_t)avl_search(&memory_roots, (void *)root_id);
+    if(root_address == 0) return -1;
+
+    if(address & 0xfff) return -1;
+    if(paddress & 0xfff) return -1;
+    if(size & 0xfff) return -1;
+
+    while(size > 0) {
+        uint64_t eaddr = paging_addr_create(root_address, address, 3);
+        phy_write64(eaddr, paddress | KMEM_MAP_DATA);
+
         address += 0x1000;
         size -= 0x1000;
     }
@@ -172,6 +193,34 @@ int mman_unmap(uint64_t root_id, uint64_t address, uint64_t size) {
             if(entry & 1) {
                 decrement_page(entry & ~KMEM_FLAG_MASK);
                 phy_write64(eaddr, 0);
+            }
+        }
+
+        address += 0x1000;
+        size -= 0x1000;
+    }
+
+    return 0;
+}
+
+int mman_protect(uint64_t root_id, uint64_t address, uint64_t size,
+    uint64_t flags) {
+
+    uint64_t root_address =
+        (uint64_t)avl_search(&memory_roots, (void *)root_id);
+    if(root_address == 0) return -1;
+
+    if(address & 0xfff) return -1;
+    if(size & 0xfff) return -1;
+
+    while(size > 0) {
+        uint8_t ok;
+        uint64_t eaddr = kmem_paging_addr(root_address, address, 3, &ok);
+        if(ok) {
+            uint64_t entry = phy_read64(eaddr);
+            if(entry & 1) {
+                //decrement_page(entry & ~KMEM_FLAG_MASK);
+                phy_write64(eaddr, (entry & ~KMEM_FLAG_MASK) | flags);
             }
         }
 
