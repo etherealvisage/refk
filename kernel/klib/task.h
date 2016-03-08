@@ -5,7 +5,7 @@
 
 #define TASK_BASE 0xffffffffffe00000
 
-#define NUM_TASKS 16
+#define NUM_TASKS 4096
 #define TASK_ADDR(i) (TASK_BASE + 0x1000 + (i)*256)
 #define TASK_MEM(i) ((task_state_t *)(TASK_ADDR(i)))
 

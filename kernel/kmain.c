@@ -37,6 +37,8 @@ void kmain(uint64_t *mem) {
 
             ptr += 0x1000;
         }
+        // clear task memory
+        memset((void *)(TASK_BASE + 0x1000), 0, NUM_TASKS * 256);
 
         // mark task #0 as valid, this will be used as temporary stack space
         // by the switcher

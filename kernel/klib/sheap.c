@@ -1,3 +1,4 @@
+#include "kutil.h"
 #include "sheap.h"
 
 //static klib_balloc_allocator_t allocator;
@@ -10,6 +11,7 @@ void sheap_init() {
 
     klib_balloc_add_region((void *)allocator_memory,
         heap_memory[0], 1<<20, 8);
+
     klib_balloc_add_region((void *)allocator_memory,
         heap_memory[1], 1<<20, 32);
     klib_balloc_add_region((void *)allocator_memory,

@@ -1,19 +1,15 @@
-#ifndef SCHEDULER_H
-#define SCHEDULER_H
+#ifndef SCHEDULER_INTERFACE_H
+#define SCHEDULER_INTERFACE_H
 
 #include <stdint.h>
 
-#define COMM_BASE_ADDRESS 0xC044ADD4000
-#define COMM_OUT_OFFSET 0x800
-
-#include "klib/task.h"
-
 enum {
-    COMM_FORWARD,
     COMM_SET_NAME,
     COMM_GET_NAMED,
+    COMM_MAKE_ROOT,
     COMM_SPAWN,
     COMM_SET_STATE,
+    COMM_REAP,
 };
 
 enum {
@@ -52,11 +48,6 @@ typedef struct comm_in_packet_t {
     uint64_t req_id;
     union {
         struct {
-            uint64_t to;
-            uint64_t length;
-            char message[32];
-        } forward;
-        struct {
             uint64_t task_id;
             char name[32];
         } set_name;
@@ -71,6 +62,9 @@ typedef struct comm_in_packet_t {
             uint64_t index;
             uint64_t value;
         } set_state;
+        struct {
+            uint64_t task_id;
+        } reap;
     };
 } comm_in_packet_t;
 

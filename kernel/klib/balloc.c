@@ -27,6 +27,7 @@ int BALLOC_NAME(setup_allocator)(BALLOC_NAME(allocator_t) *allocator,
     count = size - sizeof(*allocator);
     count /= sizeof(BALLOC_NAME(region_t));
 
+    allocator->region_count = 0;
     allocator->region_alloc_count = count;
     allocator->regions = (void *)(allocator + 1);
 
