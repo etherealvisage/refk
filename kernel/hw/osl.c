@@ -3,6 +3,8 @@
 
 #include "klib/kcomm.h"
 #include "klib/kutil.h"
+#include "klib/sheap.h"
+#include "klib/synch.h"
 
 #include "../scheduler/interface.h"
 
@@ -60,12 +62,6 @@ ACPI_STATUS AcpiOsPhysicalTableOverride(ACPI_TABLE_HEADER *ExistingTable,
 
 void *AcpiOsMapMemory(ACPI_PHYSICAL_ADDRESS PhysicalAddress,
     ACPI_SIZE Length) {
-    d_printf("mapping\n");
-
-    uint64_t *process_task = (void *)0xffffffffffe01400;
-    for(int i = 0; i < 32; i ++) {
-        d_printf("process_task[%x] = %x\n", i, process_task[i]);
-    }
 
     if(this_id == 0) {
         // NOTE: this is here in case MapMemory is called before anything else
@@ -90,24 +86,16 @@ void *AcpiOsMapMemory(ACPI_PHYSICAL_ADDRESS PhysicalAddress,
     last_map += end-begin;
 
     kcomm_put(schedin, &in, sizeof(in));
-
-    d_printf("requesting that scheduler process requests for %x\n", this_id);
-
     __asm__ __volatile__("int $0xfe" : : "a"(this_id));
-
-    d_printf("waiting for map...\n");
 
     sched_out_packet_t out;
     uint64_t out_len;
     while(kcomm_get(schedout, &out, &out_len) || out.req_id != in.req_id) {}
 
-    d_printf("mapped!\n");
-
     return (uint8_t *)ret + (PhysicalAddress & 0xfff);
 }
 
 void AcpiOsUnmapMemory(void *where, ACPI_SIZE length) {
-    d_printf("unmapping\n");
     uint64_t begin = (uint64_t)where & ~0xfff;
     uint64_t end = ((uint64_t)where + length + 0xfff) & ~0xfff;
 
@@ -124,186 +112,166 @@ void AcpiOsUnmapMemory(void *where, ACPI_SIZE length) {
 
 ACPI_STATUS AcpiOsGetPhysicalAddress(void *LogicalAddress,
     ACPI_PHYSICAL_ADDRESS *PhysicalAddress) {
+
     d_printf("TODO: getphyaddr\n");
-    // TODO
 
     return 0;
 }
 
 void *AcpiOsAllocate(ACPI_SIZE Size) {
-    d_printf("TODO: allocate\n");
-    // TODO
-    return 0;
+    return sheap_alloc(Size);
 }
 
 void AcpiOsFree(void *Memory) {
-    d_printf("TODO: free\n");
-    // TODO
+    sheap_free(Memory);
 }
 
-ACPI_STATUS
-AcpiOsReadPciConfiguration (
-    ACPI_PCI_ID             *PciId,
-    UINT32                  Reg,
-    UINT64                  *Value,
-    UINT32                  Width){ /* TODO */ return 0; }
+ACPI_STATUS AcpiOsReadPciConfiguration(ACPI_PCI_ID *PciId, UINT32 Reg,
+    UINT64 *Value, UINT32 Width) {
 
-ACPI_STATUS
-AcpiOsWritePciConfiguration (
-    ACPI_PCI_ID             *PciId,
-    UINT32                  Reg,
-    UINT64                  Value,
-    UINT32                  Width) { /* TODO */ return 0; }
+    d_printf("TODO: readpciconfig\n");
+    return 0;
+}
 
+ACPI_STATUS AcpiOsWritePciConfiguration(ACPI_PCI_ID *PciId, UINT32 Reg,
+    UINT64 Value, UINT32 Width) {
+    
+    d_printf("TODO: writepciconfig\n");
+    return 0;
+}
 
 
 BOOLEAN AcpiOsReadable(void *Memory, ACPI_SIZE Length) {
-    // TODO
+    d_printf("TODO: osreadable\n");
     return 0;
 }
 
 BOOLEAN AcpiOsWritable(void *Memory, ACPI_SIZE Length) {
-    // TODO
+    d_printf("TODO: oswritable\n");
     return 0;
 }
 
-UINT64 AcpiOsGetTimer (void) {
-    // TODO
+UINT64 AcpiOsGetTimer(void) {
+    d_printf("TODO: gettimer\n");
     return 0;
 }
 
-ACPI_STATUS AcpiOsSignal (UINT32 Function, void *Info) {
-    // TODO
+ACPI_STATUS AcpiOsSignal(UINT32 Function, void *Info) {
+    d_printf("TODO: signal\n");
     return 0;
 }
 
 ACPI_THREAD_ID AcpiOsGetThreadId() {
-    // TODO
-    return 0;
+    return this_id;
 }
 
 ACPI_STATUS AcpiOsExecute(ACPI_EXECUTE_TYPE Type,
     ACPI_OSD_EXEC_CALLBACK Function, void *Context) {
-    // TODO
+
+    d_printf("TODO: execute\n");
     return 0;
 }
 
 void AcpiOsWaitEventsComplete (void) {
-    // TODO
+    d_printf("TODO: wait\n");
 }
 
 void AcpiOsSleep(UINT64 Milliseconds) {
-    // TODO
+    d_printf("TODO: sleep\n");
 }
 
 void AcpiOsStall(UINT32 Microseconds) {
-    // TODO
+    d_printf("TODO: stall\n");
 }
 
-ACPI_STATUS
-AcpiOsReadPort (
-    ACPI_IO_ADDRESS         Address,
-    UINT32                  *Value,
-    UINT32                  Width) { /* TODO */ return 0; }
+ACPI_STATUS AcpiOsReadPort(ACPI_IO_ADDRESS Address, UINT32 *Value,
+    UINT32 Width) {
 
-ACPI_STATUS
-AcpiOsWritePort (
-    ACPI_IO_ADDRESS         Address,
-    UINT32                  Value,
-    UINT32                  Width) { /* TODO */ return 0; }
-
-
-
-ACPI_STATUS
-AcpiOsReadMemory (
-    ACPI_PHYSICAL_ADDRESS   Address,
-    UINT64                  *Value,
-    UINT32                  Width){
-    d_printf("TODO: readmem\n");
-
-    /* TODO */ return 0; }
-
-ACPI_STATUS
-AcpiOsWriteMemory (
-    ACPI_PHYSICAL_ADDRESS   Address,
-    UINT64                  Value,
-    UINT32                  Width){
-    d_printf("TODO: writemem\n");
-    /* TODO */ return 0; }
-
-
-#if 0
-ACPI_STATUS AcpiOsCreateMutex(ACPI_MUTEX *OutHandle) {
-    // TODO
-}
-
-void AcpiOsDeleteMutex(ACPI_MUTEX Handle) {
-    // TODO
-}
-
-ACPI_STATUS AcpiOsAcquireMutex(ACPI_MUTEX Handle, UINT16 Timeout) {
-    // TODO
+    d_printf("TODO: readport\n");
     return 0;
 }
 
-void AcpiOsReleaseMutex(ACPI_MUTEX Handle) {
-    // TODO
+ACPI_STATUS AcpiOsWritePort(ACPI_IO_ADDRESS Address, UINT32 Value,
+    UINT32 Width) {
+
+    d_printf("TODO: writeport\n");
+    return 0;
 }
-#endif
+
+ACPI_STATUS AcpiOsReadMemory(ACPI_PHYSICAL_ADDRESS Address, UINT64 *Value,
+    UINT32 Width) {
+
+    d_printf("TODO: readmem\n");
+
+    return 0;
+}
+
+ACPI_STATUS AcpiOsWriteMemory(ACPI_PHYSICAL_ADDRESS Address, UINT64 Value,
+    UINT32 Width) {
+
+    d_printf("TODO: writemem\n");
+    return 0;
+}
 
 ACPI_STATUS AcpiOsCreateSemaphore(UINT32 MaxUnits, UINT32 InitialUnits,
     ACPI_SEMAPHORE *OutHandle) {
 
-    // TODO
+    semaphore_t *semaphore = sheap_alloc(sizeof(spinlock_t));
+
+    synch_initsemaphore(semaphore, InitialUnits);
+
+    *OutHandle = semaphore;
     return 0;
 }
 
 ACPI_STATUS AcpiOsDeleteSemaphore(ACPI_SEMAPHORE Handle) {
-    // TODO
+    sheap_free(Handle);
     return 0;
 }
 
 ACPI_STATUS AcpiOsWaitSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units,
     UINT16 Timeout) {
 
-    // TODO
+    synch_semaphoredec(Handle, Units);
     return 0;
 }
 
 ACPI_STATUS AcpiOsSignalSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units) {
-    // TODO
+    synch_semaphoreinc(Handle, Units);
     return 0;
 }
 
 ACPI_STATUS AcpiOsCreateLock(ACPI_SPINLOCK *OutHandle) {
-    // TODO
-    return 0;
+    spinlock_t *lock = sheap_alloc(sizeof(spinlock_t));
+    synch_initspin(lock);
+    *OutHandle = lock;
+    return !lock;
 }
 
 void AcpiOsDeleteLock(ACPI_SPINLOCK Handle) {
-    // TODO
+    sheap_free(Handle);
 }
 
 ACPI_CPU_FLAGS AcpiOsAcquireLock(ACPI_SPINLOCK Handle) {
-    // TODO
+    synch_spinlock(Handle);
     return 0;
 }
 
 void AcpiOsReleaseLock(ACPI_SPINLOCK Handle, ACPI_CPU_FLAGS Flags) {
-    // TODO
+    synch_spinunlock(Handle);
 }
 
 ACPI_STATUS AcpiOsInstallInterruptHandler(UINT32 InterruptLevel,
     ACPI_OSD_HANDLER Handler, void *Context) {
 
-    // TODO
+    d_printf("TODO: installirq\n");
     return 0;
 }
 
 ACPI_STATUS AcpiOsRemoveInterruptHandler(UINT32 InterruptNumber,
     ACPI_OSD_HANDLER Handler) {
 
-    // TODO
+    d_printf("TODO: removeirq\n");
     return 0;
 }
 

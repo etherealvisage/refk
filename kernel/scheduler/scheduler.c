@@ -47,23 +47,14 @@ char process_stack[4096];
 static void process(uint64_t vector, uint64_t __attribute__((unused)) excode,
     task_state_t *ret_task) {
 
-    d_printf("process() invoked!\n");
-
     process_for(ret_task->rax);
-
-    d_printf("...\n");
-
-    d_printf("Transferring back to task at %x\n", ret_task);
 
     uint64_t xor = 0;
     for(int i = 0; i < 32; i ++) {
         xor ^= ((uint64_t *)ret_task)[i];
     }
-    d_printf("ret_task ip: %x\n", ret_task->rip);
-    d_printf("ret_task xor: %x\n", xor);
 
     void (*transfer)(uint64_t, task_state_t *) = (void *)0xffffffffffe00000;
-    //lapic_conditional_eoi(vector);
     transfer(0, ret_task);
 }
 
@@ -84,12 +75,6 @@ void _start(uint64_t bootproc_cr3, task_state_t *hw_task) {
     task_state_t *process_ts = task_create();
     task_set_local(process_ts, process, process_stack + 4096);
     DESC_INT_TASKS_MEM[0xfe] = (uint64_t)process_ts;
-
-    d_printf("process_ts: %x\n", process_ts);
-    uint64_t *process_task = (void *)0xffffffffffe01400;
-    for(int i = 0; i < 32; i ++) {
-        d_printf("process_task[%x] = %x\n", i, process_task[i]);
-    }
 
     // the scheduler uses task #1.
     TASK_MEM(1)->state = TASK_STATE_VALID | TASK_STATE_RUNNABLE;

@@ -28,7 +28,6 @@ static int process(queue_entry *q) {
     uint64_t in_size;
     int ret = 0;
     while(!kcomm_get(q->in, &in, &in_size)) {
-        d_printf("Processing packet of type %x\n", in.type);
         ret = 1;
         status.type = in.type;
         status.req_id = in.req_id;
@@ -132,14 +131,12 @@ void listen(task_state_t *hw_task) {
         hw_task->state |= TASK_STATE_RUNNABLE;
     }
 
-    d_printf("Total number of queue entries: %x\n", queue_size);
     while(1) {
         int any = 0;
         for(int i = 0; i < queue_size; i ++) {
             any |= process(queue + i);
         }
         if(!any) {
-            d_printf("done with everything on incoming sched queues\n");
             __asm__ ("int $0xff");
         }
         // TODO: yield timeslice here

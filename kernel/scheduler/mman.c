@@ -255,7 +255,6 @@ static void decrement_page(uint64_t page) {
     else {
         avl_remove(&page_refcount, (void *)page);
         kmem_unuse(page);
-        d_printf("releasing page %x\n", page);
     }
 }
 

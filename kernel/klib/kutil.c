@@ -49,7 +49,6 @@ void d_vprintf(const char *msg, va_list va) {
                     d_putchar(*s);
                     s ++;
                 }
-                break;
             }
             else if(*p == 'x' || *p == 'p') {
                 uint64_t v = va_arg(va, uint64_t);

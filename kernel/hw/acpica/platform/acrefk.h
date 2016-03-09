@@ -62,25 +62,6 @@
 #define ACPI_REDUCED_HARDWARE 1
 #endif
 
-#ifdef CONFIG_ACPI_DEBUGGER
-#define ACPI_DEBUGGER
-#endif
-
-//#include <linux/string.h>
-//#include <linux/kernel.h>
-//#include <linux/ctype.h>
-//#include <linux/sched.h>
-//#include <linux/atomic.h>
-//#include <linux/math64.h>
-//#include <linux/slab.h>
-//#include <linux/spinlock_types.h>
-//#ifdef EXPORT_ACPI_INTERFACES
-//#include <linux/export.h>
-//#endif
-//#ifdef CONFIG_ACPI
-//#include <asm/acenv.h>
-//#endif
-
 /* Host-dependent types and defines for in-kernel ACPICA */
 
 #define ACPI_MACHINE_WIDTH          64
@@ -91,6 +72,7 @@
 #define ACPI_CACHE_T                ACPI_MEMORY_LIST
 #define ACPI_USE_LOCAL_CACHE        1
 #define ACPI_SPINLOCK               spinlock_t *
+#define ACPI_SEMAPHORE              semaphore_t *
 #define ACPI_CPU_FLAGS              unsigned long
 
 /*
