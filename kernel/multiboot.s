@@ -315,15 +315,24 @@ extern _data_phy_end
 	jl	.data_map
 
 	; Set up physical memory mapping.
-	; Map the four GB via four P3 entries.
-	mov	dword [paging_phy_p3 + 0*8], 0x83 + 0x00000000
-	mov	dword [paging_phy_p3 + 0*8 + 4], 0
-	mov	dword [paging_phy_p3 + 1*8], 0x83 + 0x40000000
-	mov	dword [paging_phy_p3 + 1*8 + 4], 0
-	mov	dword [paging_phy_p3 + 2*8], 0x83 + 0x80000000
-	mov	dword [paging_phy_p3 + 2*8 + 4], 0
-	mov	dword [paging_phy_p3 + 3*8], 0x83 + 0xc0000000
-	mov	dword [paging_phy_p3 + 3*8 + 4], 0
+	; Map the GB via one P3 entry each.
+	mov	ecx, 16
+	mov	eax, 0
+	mov	ebx, 0
+.phy_repeat:
+	mov	dword [ebx + paging_phy_p3 + 0*8], 0x83 + 0x00000000
+	mov	dword [ebx + paging_phy_p3 + 0*8 + 4], eax
+	mov	dword [ebx + paging_phy_p3 + 1*8], 0x83 + 0x40000000
+	mov	dword [ebx + paging_phy_p3 + 1*8 + 4], eax
+	mov	dword [ebx + paging_phy_p3 + 2*8], 0x83 + 0x80000000
+	mov	dword [ebx + paging_phy_p3 + 2*8 + 4], eax
+	mov	dword [ebx + paging_phy_p3 + 3*8], 0x83 + 0xc0000000
+	mov	dword [ebx + paging_phy_p3 + 3*8 + 4], eax
+
+	inc	eax
+	add	ebx, 32
+
+	loop	.phy_repeat
 
 	; Point the correct entry in the P4 to the physical memory map.
 	mov	eax, paging_phy_p3
