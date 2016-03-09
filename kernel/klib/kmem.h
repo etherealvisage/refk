@@ -25,5 +25,6 @@ void kmem_map(uint64_t root, uint64_t vaddr, uint64_t page, uint64_t flags);
 void kmem_set_flags(uint64_t root, uint64_t vaddr, uint64_t flags);
 
 void kmem_memcpy(uint64_t root, uint64_t vaddr, void *data, uint64_t size);
+void kmem_memclr(uint64_t root, uint64_t vaddr, uint64_t size);
 
 #endif

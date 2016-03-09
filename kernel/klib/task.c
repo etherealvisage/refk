@@ -68,6 +68,10 @@ void task_load_elf(task_state_t *ts, const void *elf_image,
         kmem_memcpy(ts->cr3, phdrs[i].p_vaddr,
             (uint8_t *)elf_image + phdrs[i].p_offset,
             phdrs[i].p_filesz);
+        if(phdrs[i].p_memsz != phdrs[i].p_filesz) {
+            kmem_memclr(ts->cr3, phdrs[i].p_vaddr + phdrs[i].p_filesz,
+                phdrs[i].p_memsz - phdrs[i].p_filesz);
+        }
 
         // remap executable regions as KMEM_MAP_CODE
         // TODO: support regular read-only regions...
