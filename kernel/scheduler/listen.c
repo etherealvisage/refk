@@ -24,11 +24,34 @@ static void remove_from_queue(uint64_t id);
 // task data structures
 static void process(queue_entry *q) {
     sched_in_packet_t in;
-    sched_out_packet_t out;
+    sched_out_packet_t status;
     uint64_t in_size;
     while(!kcomm_get(q->in, &in, &in_size)) {
-        d_printf("Received!\n");
+        status.type = in.type;
+        status.req_id = in.req_id;
+        status.result = 0;
         switch(in.type) {
+        case SCHED_MAP_ANONYMOUS: {
+            uint64_t id = in.map_anonymous.root_id;
+            if(id == 0) id = sched_get_root(q->task_id);
+            status.result = mman_anonymous(id, in.map_anonymous.address,
+                in.map_anonymous.size);
+            break;
+        }
+        case SCHED_MAP_PHYSICAL: {
+            uint64_t id = in.map_physical.root_id;
+            if(id == 0) id = sched_get_root(q->task_id);
+            status.result = mman_physical(id, in.map_physical.address,
+                in.map_physical.phy_addr, in.map_physical.size);
+            break;
+        }
+        case SCHED_UNMAP: {
+            uint64_t id = in.unmap.root_id;
+            if(id == 0) id = sched_get_root(q->task_id);
+            status.result = mman_unmap(id, in.unmap.address,
+                in.unmap.size);
+            break;
+        }
         case SCHED_SET_NAME: {
             in.set_name.name[31] = 0;
             uint64_t id = in.set_name.task_id;
@@ -38,9 +61,8 @@ static void process(queue_entry *q) {
         }
         case SCHED_GET_NAMED: {
             in.get_named.name[31] = 0;
-            out.type = SCHED_GET_NAMED;
-            out.get_named.task_id = sched_named_task(in.get_named.name);
-            kcomm_put(q->out, &out, sizeof(out));
+            status.type = SCHED_GET_NAMED;
+            status.get_named.task_id = sched_named_task(in.get_named.name);
             break;
         }
         case SCHED_SPAWN: {
@@ -48,17 +70,14 @@ static void process(queue_entry *q) {
             kcomm_t *sin, *sout;
             uint64_t task_id = sched_task_create(root_id, &sin, &sout);
 
-            out.type = SCHED_SPAWN;
-            out.req_id = in.req_id;
-            out.spawn.root_id = root_id;
-            out.spawn.task_id = task_id;
+            status.spawn.root_id = root_id;
+            status.spawn.task_id = task_id;
 
             queue[queue_size].task_id = task_id;
             queue[queue_size].in = sin;
             queue[queue_size].out = sout;
             queue_size ++;
 
-            kcomm_put(q->out, &out, sizeof(out));
             break;
         }
         case SCHED_SET_STATE: {
@@ -68,7 +87,11 @@ static void process(queue_entry *q) {
         }
         case SCHED_REAP: {
             uint64_t id = in.reap.task_id;
-            if(id == 0) id = q->task_id;
+            if(id == 0) {
+                id = q->task_id;
+                // definitely don't send status update if reaping self...
+                status.req_id = 0;
+            }
             sched_task_reap(id);
             remove_from_queue(id);
             break;
@@ -77,6 +100,8 @@ static void process(queue_entry *q) {
             d_printf("Unknown sched_in packet type!\n");
             break;
         }
+
+        if(status.req_id) kcomm_put(q->out, &status, sizeof(status));
     }
 }
 

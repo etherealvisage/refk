@@ -44,6 +44,9 @@
 #ifndef __ACPI_H__
 #define __ACPI_H__
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 /*
  * Public include files for use by code that will interface to ACPICA.
  *
@@ -63,5 +66,7 @@
 #include "acpiosxf.h"           /* OSL interfaces (ACPICA-to-OS) */
 #include "acpixf.h"             /* ACPI core subsystem external interfaces */
 #include "platform/acenvex.h"   /* Extra environment-specific items */
+
+#pragma GCC diagnostic pop
 
 #endif /* __ACPI_H__ */

@@ -14,11 +14,13 @@
 #define CHANNEL_SIZE 0x1000
 
 avl_tree_t task_map;
+avl_tree_t task_root;
 avl_tree_t named_tasks;
 avl_tree_t local_channel;
 
 void task_init() {
     avl_initialize(&task_map, avl_ptrcmp, 0);
+    avl_initialize(&task_root, avl_ptrcmp, 0);
     avl_initialize(&named_tasks, (avl_comparator_t)strcmp, sheap_free);
     avl_initialize(&local_channel, avl_ptrcmp, 0);
 }
@@ -71,6 +73,7 @@ uint64_t sched_task_attach(task_state_t *ts, kcomm_t **sin, kcomm_t **sout) {
     
     uint64_t root_id = mman_import_root(ts->cr3);
     mman_increment_root(root_id);
+    avl_insert(&task_root, (void *)id, (void *)root_id);
 
     uint64_t t_addr;
     task_setup(id, root_id, sin, sout, &t_addr);
@@ -102,6 +105,7 @@ uint64_t sched_task_create(uint64_t root_id, kcomm_t **sin, kcomm_t **sout) {
 
     mman_increment_root(root_id);
     ts->cr3 = mman_get_root_cr3(root_id);
+    avl_insert(&task_root, (void *)id, (void *)root_id);
 
     uint64_t unused;
     task_setup(id, root_id, sin, sout, &unused);
@@ -112,6 +116,9 @@ uint64_t sched_task_create(uint64_t root_id, kcomm_t **sin, kcomm_t **sout) {
 void sched_task_reap(uint64_t task_id) {
     task_state_t *ts = avl_search(&task_map, (void *)task_id);
     if(!ts) return;
+
+    avl_remove(&task_map, (void *)task_id);
+    avl_remove(&task_root, (void *)task_id);
 
     mman_decrement_root(ts->cr3);
     ts->state = 0;
@@ -129,4 +136,8 @@ void sched_set_state(uint64_t task_id, uint64_t index, uint64_t value) {
         uint64_t *indexed = (void *)ts;
         indexed[index] = value;
     }
+}
+
+uint64_t sched_get_root(uint64_t task_id) {
+    return (uint64_t)avl_search(&task_root, (void *)task_id);
 }

@@ -97,6 +97,7 @@ int mman_physical(uint64_t root_id, uint64_t address, uint64_t paddress,
         phy_write64(eaddr, paddress | KMEM_MAP_DATA);
 
         address += 0x1000;
+        paddress += 0x1000;
         size -= 0x1000;
     }
 

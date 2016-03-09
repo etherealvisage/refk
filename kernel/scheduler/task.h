@@ -16,4 +16,6 @@ void sched_task_reap(uint64_t task_id);
 
 void sched_set_state(uint64_t task_id, uint64_t index, uint64_t value);
 
+uint64_t sched_get_root(uint64_t task_id);
+
 #endif

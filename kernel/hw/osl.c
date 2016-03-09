@@ -1,4 +1,16 @@
+// make this file quiet
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+#include "klib/kcomm.h"
+#include "klib/kutil.h"
+
+#include "../scheduler/interface.h"
+
 #include "osl.h"
+
+#define MAP_BEGIN 0x70000000
+
+uint64_t last_map = MAP_BEGIN;
 
 ACPI_STATUS AcpiOsInitialize() {
     return 0;
@@ -10,6 +22,7 @@ ACPI_STATUS AcpiOsTerminate() {
 
 ACPI_PHYSICAL_ADDRESS AcpiOsGetRootPointer() {
     ACPI_SIZE ret;
+    //ret = 0xf69e0;
 	AcpiFindRootPointer(&ret);
 	return ret;
 }
@@ -33,33 +46,71 @@ ACPI_STATUS AcpiOsTableOverride(ACPI_TABLE_HEADER *ExistingTable,
 ACPI_STATUS AcpiOsPhysicalTableOverride(ACPI_TABLE_HEADER *ExistingTable,
     ACPI_PHYSICAL_ADDRESS *NewAddress, UINT32 *NewTableLength) {
 
+    // TODO: figure out how to make this succeed...
+
     return 1;
 }
 
 void *AcpiOsMapMemory(ACPI_PHYSICAL_ADDRESS PhysicalAddress,
     ACPI_SIZE Length) {
 
-    // TODO
-    return 0;
+    uint64_t begin = PhysicalAddress & ~0xfff;
+    uint64_t end = (PhysicalAddress + Length + 0xfff) & ~0xfff;
+
+    sched_in_packet_t in;
+    in.type = SCHED_MAP_PHYSICAL;
+    in.req_id = PhysicalAddress;
+    in.map_physical.phy_addr = begin;
+    in.map_physical.size = end-begin;
+    in.map_physical.root_id = 0;
+    in.map_physical.address = last_map;
+
+    void *ret = (void *)last_map;
+
+    last_map += end-begin;
+
+    kcomm_put(schedin, &in, sizeof(in));
+
+    sched_out_packet_t out;
+    uint64_t out_len;
+    while(kcomm_get(schedout, &out, &out_len) || out.req_id != in.req_id) {}
+
+    return (uint8_t *)ret + (PhysicalAddress & 0xfff);
 }
 
 void AcpiOsUnmapMemory(void *where, ACPI_SIZE length) {
     // TODO
+    return;
+
+    uint64_t begin = (uint64_t)where & ~0xfff;
+    uint64_t end = ((uint64_t)where + length + 0xfff) & ~0xfff;
+
+    sched_in_packet_t in;
+    in.type = SCHED_MAP_PHYSICAL;
+    in.req_id = 0; // no confirmation requested
+    in.unmap.root_id = 0;
+    in.unmap.size = end-begin;
+    in.unmap.address = begin;
+
+    kcomm_put(schedin, &in, sizeof(in));
 }
 
 ACPI_STATUS AcpiOsGetPhysicalAddress(void *LogicalAddress,
     ACPI_PHYSICAL_ADDRESS *PhysicalAddress) {
+    d_printf("TODO: getphyaddr\n");
     // TODO
 
     return 0;
 }
 
 void *AcpiOsAllocate(ACPI_SIZE Size) {
+    d_printf("TODO: allocate\n");
     // TODO
     return 0;
 }
 
 void AcpiOsFree(void *Memory) {
+    d_printf("TODO: free\n");
     // TODO
 }
 
@@ -140,13 +191,18 @@ ACPI_STATUS
 AcpiOsReadMemory (
     ACPI_PHYSICAL_ADDRESS   Address,
     UINT64                  *Value,
-    UINT32                  Width){ /* TODO */ return 0; }
+    UINT32                  Width){
+    d_printf("TODO: readmem\n");
+
+    /* TODO */ return 0; }
 
 ACPI_STATUS
 AcpiOsWriteMemory (
     ACPI_PHYSICAL_ADDRESS   Address,
     UINT64                  Value,
-    UINT32                  Width){ /* TODO */ return 0; }
+    UINT32                  Width){
+    d_printf("TODO: writemem\n");
+    /* TODO */ return 0; }
 
 
 #if 0
@@ -225,8 +281,14 @@ ACPI_STATUS AcpiOsRemoveInterruptHandler(UINT32 InterruptNumber,
 }
 
 void AcpiOsPrintf (const char *Format, ...) {
-    // TODO
+    va_list va;
+    va_start(va, Format);
+
+    d_vprintf(Format, va);
+
+    va_end(va);
 }
+
 void AcpiOsVprintf (const char *Format, va_list va) {
-    // TODO
+    d_vprintf(Format, va);
 }

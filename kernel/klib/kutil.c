@@ -28,6 +28,12 @@ void d_printf(const char *msg, ...) {
     va_list va;
     va_start(va, msg);
 
+    d_vprintf(msg, va);
+
+    va_end(va);
+}
+
+void d_vprintf(const char *msg, va_list va) {
     const char *p = msg;
     while(*p) {
         if(*p == '\n') {
@@ -60,8 +66,6 @@ void d_printf(const char *msg, ...) {
             p ++;
         }
     }
-
-    va_end(va);
 }
 
 uint8_t phy_read8(uint64_t address) {

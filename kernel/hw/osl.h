@@ -3,4 +3,7 @@
 
 #include "acpica/acpi.h"
 
+extern kcomm_t *schedin;
+extern kcomm_t *schedout;
+
 #endif

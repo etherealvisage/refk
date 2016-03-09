@@ -4,6 +4,9 @@
 #include <stdint.h>
 
 enum {
+    SCHED_MAP_ANONYMOUS,
+    SCHED_MAP_PHYSICAL,
+    SCHED_UNMAP,
     SCHED_SET_NAME,
     SCHED_GET_NAMED,
     SCHED_SPAWN,
@@ -47,6 +50,22 @@ typedef struct sched_in_packet_t {
     uint64_t req_id;
     union {
         struct {
+            uint64_t root_id;
+            uint64_t address;
+            uint64_t size;
+        } map_anonymous;
+        struct {
+            uint64_t root_id;
+            uint64_t address;
+            uint64_t phy_addr;
+            uint64_t size;
+        } map_physical;
+        struct {
+            uint64_t root_id;
+            uint64_t address;
+            uint64_t size;
+        } unmap;
+        struct {
             uint64_t task_id;
             char name[32];
         } set_name;
@@ -70,6 +89,7 @@ typedef struct sched_in_packet_t {
 typedef struct sched_out_packet_t {
     uint8_t type;
     uint64_t req_id;
+    uint64_t result;
     union {
         struct {
             uint64_t task_id;

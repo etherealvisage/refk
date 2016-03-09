@@ -2,11 +2,13 @@
 #define KUTIL_H
 
 #include <stdint.h>
+#include <stdarg.h>
 
 // debug functions
 void d_init();
 void d_putchar(char c);
 void d_printf(const char *format, ...);
+void d_vprintf(const char *format, va_list va);
 
 // port I/O functions
 void koutb(uint16_t port, uint8_t value);
