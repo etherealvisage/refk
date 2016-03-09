@@ -52,8 +52,11 @@ transfer_control:
 	mov	qword [rdi + 22*8], rax
 	mov	ax, ss
 	mov	qword [rdi + 23*8], rax
-	; TODO: store FS_BASE!
-
+	; save FS_BASE
+	mov	ecx, 0xc0000100 ; FS_BASE MSR
+	rdmsr
+	mov	dword [rdi + 24*8], eax
+	mov	dword [rdi + 24*8 + 4], edx
 	; save GS_BASE
 	mov	ecx, 0xc0000101 ; GS_BASE MSR
 	rdmsr
@@ -86,8 +89,12 @@ transfer_control:
 	mov	fs, ax
 	mov	rax, qword [rsi + 22*8] ; gs
 	mov	gs, ax
-	; TODO: restore FS_BASE
 
+	; restore FS_BASE
+	mov	ecx, 0xc0000100 ; FS_BASE MSR
+	mov	eax, dword [rsi + 24*8]
+	mov	edx, dword [rsi + 24*8 + 4]
+	wrmsr
 	; restore GS_BASE
 	mov	ecx, 0xc0000101 ; GS_BASE MSR
 	mov	eax, dword [rsi + 25*8]
