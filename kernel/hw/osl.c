@@ -33,7 +33,6 @@ ACPI_STATUS AcpiOsTerminate() {
 
 ACPI_PHYSICAL_ADDRESS AcpiOsGetRootPointer() {
     ACPI_SIZE ret;
-    //ret = 0xf69e0;
 	AcpiFindRootPointer(&ret);
 	return ret;
 }
@@ -65,51 +64,11 @@ ACPI_STATUS AcpiOsPhysicalTableOverride(ACPI_TABLE_HEADER *ExistingTable,
 void *AcpiOsMapMemory(ACPI_PHYSICAL_ADDRESS PhysicalAddress,
     ACPI_SIZE Length) {
 
-    if(this_id == 0) {
-        // NOTE: this is here in case MapMemory is called before anything else
-        __asm__ __volatile__("mov %%gs:0x00, %%rax" : "=a"(this_id));
-        __asm__ __volatile__("mov %%gs:0x08, %%rax" : "=a"(schedin));
-        __asm__ __volatile__("mov %%gs:0x10, %%rax" : "=a"(schedout));
-    }
-
-    uint64_t begin = PhysicalAddress & ~0xfff;
-    uint64_t end = (PhysicalAddress + Length + 0xfff) & ~0xfff;
-
-    sched_in_packet_t in;
-    in.type = SCHED_MAP_PHYSICAL;
-    in.req_id = PhysicalAddress;
-    in.map_physical.phy_addr = begin;
-    in.map_physical.size = end-begin;
-    in.map_physical.root_id = 0;
-    in.map_physical.address = last_map;
-
-    void *ret = (void *)last_map;
-
-    last_map += end-begin;
-
-    kcomm_put(schedin, &in, sizeof(in));
-    __asm__ __volatile__("int $0xfe" : : "a"(this_id));
-
-    sched_out_packet_t out;
-    uint64_t out_len;
-    while(kcomm_get(schedout, &out, &out_len) || out.req_id != in.req_id) {}
-
-    return (uint8_t *)ret + (PhysicalAddress & 0xfff);
+    return (uint8_t *)0xffffc00000000000 + PhysicalAddress;
 }
 
 void AcpiOsUnmapMemory(void *where, ACPI_SIZE length) {
-    uint64_t begin = (uint64_t)where & ~0xfff;
-    uint64_t end = ((uint64_t)where + length + 0xfff) & ~0xfff;
 
-
-    sched_in_packet_t in;
-    in.type = SCHED_UNMAP;
-    in.req_id = 0; // no confirmation requested
-    in.unmap.root_id = 0;
-    in.unmap.size = end-begin;
-    in.unmap.address = begin;
-
-    kcomm_put(schedin, &in, sizeof(in));
 }
 
 ACPI_STATUS AcpiOsGetPhysicalAddress(void *LogicalAddress,

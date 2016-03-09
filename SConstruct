@@ -95,6 +95,9 @@ if True:
 else:
     clang(env)
 
+# for non-debug versions
+#env.Append(CFLAGS = "-DNDEBUG")
+
 Export("env")
 
 SConscript(dirs=["kernel", "rlib"])
