@@ -12,7 +12,11 @@ void d_vprintf(const char *format, va_list va);
 
 // port I/O functions
 void koutb(uint16_t port, uint8_t value);
+void koutw(uint16_t port, uint16_t value);
+void koutd(uint16_t port, uint32_t value);
 uint8_t kinb(uint16_t port);
+uint16_t kinw(uint16_t port);
+uint32_t kind(uint16_t port);
 
 // physical memory manipulation
 uint8_t phy_read8(uint64_t address);

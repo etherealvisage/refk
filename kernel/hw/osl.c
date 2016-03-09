@@ -5,6 +5,8 @@
 #include "klib/kutil.h"
 #include "klib/sheap.h"
 #include "klib/synch.h"
+#include "klib/task.h"
+#include "klib/desc.h"
 
 #include "../scheduler/interface.h"
 
@@ -187,14 +189,34 @@ void AcpiOsStall(UINT32 Microseconds) {
 ACPI_STATUS AcpiOsReadPort(ACPI_IO_ADDRESS Address, UINT32 *Value,
     UINT32 Width) {
 
-    d_printf("TODO: readport\n");
+    if(Width == 8) {
+        *Value = kinb(Address);
+    }
+    else if(Width == 16) {
+        *Value = kinw(Address);
+    }
+    else if(Width == 32) {
+        *Value = kind(Address);
+    }
+    else return 1;
+
     return 0;
 }
 
 ACPI_STATUS AcpiOsWritePort(ACPI_IO_ADDRESS Address, UINT32 Value,
     UINT32 Width) {
 
-    d_printf("TODO: writeport\n");
+    if(Width == 8) {
+        koutb(Address, Value);
+    }
+    else if(Width == 16) {
+        koutw(Address, Value);
+    }
+    else if(Width == 32) {
+        koutd(Address, Value);
+    }
+    else return 1;
+
     return 0;
 }
 
@@ -264,7 +286,13 @@ void AcpiOsReleaseLock(ACPI_SPINLOCK Handle, ACPI_CPU_FLAGS Flags) {
 ACPI_STATUS AcpiOsInstallInterruptHandler(UINT32 InterruptLevel,
     ACPI_OSD_HANDLER Handler, void *Context) {
 
-    d_printf("TODO: installirq\n");
+    char *stack = sheap_alloc(1024);
+
+    task_state_t *ts = task_create();
+    task_set_local(ts, Handler, stack + 1024);
+    ts->rdi = (uint64_t)Context;
+    DESC_INT_TASKS_MEM[0x80 + InterruptLevel] = (uint64_t)ts;
+
     return 0;
 }
 

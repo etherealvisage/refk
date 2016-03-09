@@ -8,14 +8,34 @@
 // first serial device
 #define PORT_BASE 0x3f8
 
+void koutb(uint16_t port, uint8_t value) {
+    __asm__("out %%al, (%%dx)" : : "a"(value), "d"(port));
+}
+
+void koutw(uint16_t port, uint16_t value) {
+    __asm__("out %%ax, (%%dx)" : : "a"(value), "d"(port));
+}
+
+void koutd(uint16_t port, uint32_t value) {
+    __asm__("out %%eax, (%%dx)" : : "a"(value), "d"(port));
+}
+
 uint8_t kinb(uint16_t port) {
     uint8_t ret = 0;
-    __asm__("inb (%%dx), %%al" : "=a"(ret) : "d"(port));
+    __asm__("in (%%dx), %%al" : "=a"(ret) : "d"(port));
     return ret;
 }
 
-void koutb(uint16_t port, uint8_t value) {
-    __asm__("outb %%al, (%%dx)" : : "a"(value), "d"(port));
+uint16_t kinw(uint16_t port) {
+    uint16_t ret = 0;
+    __asm__("in (%%dx), %%ax" : "=a"(ret) : "d"(port));
+    return ret;
+}
+
+uint32_t kind(uint16_t port) {
+    uint32_t ret = 0;
+    __asm__("in (%%dx), %%eax" : "=a"(ret) : "d"(port));
+    return ret;
 }
 
 void d_putchar(char c) {

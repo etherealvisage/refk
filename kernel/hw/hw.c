@@ -40,6 +40,12 @@ void _start() {
 
     AcpiInitializeSubsystem();
 
+    AcpiEnableSubsystem(0);
+
+    AcpiEnterSleepStatePrep(5);
+    __asm__("cli");
+    AcpiEnterSleepState(5);
+
     d_printf("initialized\n");
     while(1) {}
 }
