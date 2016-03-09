@@ -5,8 +5,11 @@
 #include <stdarg.h>
 
 // debug functions
-void d_init();
+#ifdef NDEBUG
+#define d_putchar(c)
+#else
 void d_putchar(char c);
+#endif
 void d_printf(const char *format, ...);
 void d_vprintf(const char *format, va_list va);
 

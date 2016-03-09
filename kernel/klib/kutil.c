@@ -38,11 +38,13 @@ uint32_t kind(uint16_t port) {
     return ret;
 }
 
+#ifndef NDEBUG
 void d_putchar(char c) {
     while((kinb(PORT_BASE + 5) & 0x20) == 0) ;
 
     koutb(PORT_BASE, c);
 }
+#endif
 
 void d_printf(const char *msg, ...) {
     va_list va;

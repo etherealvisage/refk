@@ -6,6 +6,7 @@
 // first serial device
 #define PORT_BASE 0x3f8
 
+#ifndef NDEBUG
 void d_init() {
     // initialize serial port
     koutb(PORT_BASE + 1, 0x00); // disable interrupts
@@ -16,3 +17,4 @@ void d_init() {
     koutb(PORT_BASE + 2, 0xc7); // enable and clear UART FIFO
     koutb(PORT_BASE + 4, 0x0b); // IRQs enabled again, set RTS
 }
+#endif
