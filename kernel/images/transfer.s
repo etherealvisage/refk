@@ -7,10 +7,8 @@ task_state_region	equ 0xffffffffffe01000
 ;	rdi: points to task state structure to store state into
 ; 	rsi: points to task state structure to switch into
 transfer_control:
-	pushfq
 	cmp	rdi, 0
 	je	.skip_save
-	popfq
 
 	; save GPRs
 	mov	qword [rdi + 0*8], rax
@@ -19,7 +17,10 @@ transfer_control:
 	mov	qword [rdi + 3*8], rdx
 	mov	qword [rdi + 4*8], rsi
 	mov	qword [rdi + 5*8], rdi
-	mov	qword [rdi + 6*8], rsp
+	; remove return pointer from saved stack
+	mov	rax, rsp
+	add	rax, 8
+	mov	qword [rdi + 6*8], rax
 	mov	qword [rdi + 7*8], rbp
 	mov	qword [rdi + 8*8], r8
 	mov	qword [rdi + 9*8], r9
@@ -35,7 +36,8 @@ transfer_control:
 	pop	rax
 	mov	qword [rdi + 16*8], rax
 	; rip
-	mov	qword [rdi + 17*8], .exit
+	mov	rax, qword [rsp]
+	mov	qword [rdi + 17*8], rax
 
 	xor	rax, rax
 	mov	ax, cs
@@ -51,7 +53,12 @@ transfer_control:
 	mov	ax, ss
 	mov	qword [rdi + 23*8], rax
 	; TODO: store FS_BASE!
-	; TODO: store GS_BASE!
+
+	; save GS_BASE
+	mov	ecx, 0xc0000101 ; GS_BASE MSR
+	rdmsr
+	mov	dword [rdi + 25*8], eax
+	mov	dword [rdi + 25*8 + 4], edx
 
 	mov	rax, cr3
 	mov	qword [rdi + 26*8], rax
@@ -70,6 +77,22 @@ transfer_control:
 	; HACK: use first task slot for this
 	; TODO: remove this hack and use CPU-local storage
 	mov	qword [task_state_region], rsi
+
+
+	; restore basic segment registers
+	mov	rax, qword [rsi + 20*8] ; es
+	mov	es, ax
+	mov	rax, qword [rsi + 21*8] ; fs
+	mov	fs, ax
+	mov	rax, qword [rsi + 22*8] ; gs
+	mov	gs, ax
+	; TODO: restore FS_BASE
+
+	; restore GS_BASE
+	mov	ecx, 0xc0000101 ; GS_BASE MSR
+	mov	eax, dword [rsi + 25*8]
+	mov	edx, dword [rsi + 25*8 + 4]
+	wrmsr
 
 	; restore GPRs except for rax, rsi, rsp
 	mov	rbx, qword [rsi + 1*8]
@@ -106,14 +129,6 @@ transfer_control:
 	mov	rax, qword [rsi + 0*8]
 	push	rax
 
-	; restore other segment registers
-	mov	rax, qword [rsi + 20*8] ; es
-	mov	es, ax
-	mov	rax, qword [rsi + 21*8] ; fs
-	mov	fs, ax
-	mov	rax, qword [rsi + 22*8] ; gs
-	mov	gs, ax
-	; TODO: restore FS_BASE/GS_BASE
 
 	; we have to make sure ds is still valid here for all the accesses,
 	; hence this weird ordering

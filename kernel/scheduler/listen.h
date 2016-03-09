@@ -3,4 +3,6 @@
 
 void listen(task_state_t *hw_task);
 
+void process_for(uint64_t task_id);
+
 #endif

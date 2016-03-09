@@ -13,6 +13,11 @@
 #define LOCAL_CHANNEL_SIZE 0x1000000
 #define CHANNEL_SIZE 0x1000
 
+#define LOCAL_STORAGE_BASE 0x510400000
+#define LOCAL_STORAGE_SIZE 0x1000
+
+#define TEMPORARY_MAP_ADDRESS 0x50000000
+
 avl_tree_t task_map;
 avl_tree_t task_root;
 avl_tree_t named_tasks;
@@ -36,7 +41,7 @@ static uint64_t find_available_local() {
     return -1;
 }
 
-static uint64_t add_channel(uint64_t root_id, uint64_t *target_addr) {
+static uint64_t add_channel(uint64_t root_id, uint64_t *tls) {
     uint64_t local_addr = find_available_local();
     for(uint64_t i = 0; ; i ++) {
         uint64_t caddr = TASK_CHANNEL_START + i*CHANNEL_SIZE;
@@ -45,7 +50,9 @@ static uint64_t add_channel(uint64_t root_id, uint64_t *target_addr) {
         mman_anonymous(root_id, caddr, CHANNEL_SIZE);
         mman_mirror(mman_own_root(), local_addr, root_id, caddr, CHANNEL_SIZE);
 
-        *target_addr = caddr;
+        //*target_addr = caddr;
+        tls[1] = caddr;
+        tls[2] = caddr + CHANNEL_SIZE/2;
 
         break;
     }
@@ -53,11 +60,31 @@ static uint64_t add_channel(uint64_t root_id, uint64_t *target_addr) {
     return local_addr;
 }
 
-static void task_setup(uint64_t id, uint64_t root_id, kcomm_t **sin,
-    kcomm_t **sout, uint64_t *target_addr) {
+static uint64_t add_storage(uint64_t root_id) {
+    for(uint64_t i = 0; ; i ++) {
+        uint64_t saddr = LOCAL_STORAGE_BASE + i * LOCAL_STORAGE_SIZE;
+        if(mman_check_any_mapped(root_id, saddr, LOCAL_STORAGE_SIZE)) continue;
+
+        mman_anonymous(root_id, saddr, LOCAL_STORAGE_SIZE);
+
+        return saddr;
+    }
+    return 0;
+}
+
+static void task_setup(task_state_t *ts, uint64_t id, uint64_t root_id,
+    kcomm_t **sin, kcomm_t **sout) {
+
+    // point GS towards task-local storage
+    ts->gs_base = add_storage(root_id);
+    mman_mirror(mman_own_root(), TEMPORARY_MAP_ADDRESS, root_id, ts->gs_base,
+        0x1000);
+
+    uint64_t *tls = (void *)TEMPORARY_MAP_ADDRESS;
+    tls[0] = id;
 
     // create incoming message channel
-    uint64_t local_addr = add_channel(root_id, target_addr);
+    uint64_t local_addr = add_channel(root_id, tls);
     avl_insert(&local_channel, (void *)id, (void *)local_addr);
 
     *sin = (kcomm_t *)local_addr;
@@ -65,6 +92,8 @@ static void task_setup(uint64_t id, uint64_t root_id, kcomm_t **sin,
 
     kcomm_init(*sin, CHANNEL_SIZE/2);
     kcomm_init(*sout, CHANNEL_SIZE/2);
+
+    mman_unmap(mman_own_root(), TEMPORARY_MAP_ADDRESS, 0x1000);
 }
 
 uint64_t sched_task_attach(task_state_t *ts, kcomm_t **sin, kcomm_t **sout) {
@@ -75,11 +104,7 @@ uint64_t sched_task_attach(task_state_t *ts, kcomm_t **sin, kcomm_t **sout) {
     mman_increment_root(root_id);
     avl_insert(&task_root, (void *)id, (void *)root_id);
 
-    uint64_t t_addr;
-    task_setup(id, root_id, sin, sout, &t_addr);
-
-    ts->rdi = t_addr;
-    ts->rsi = t_addr + CHANNEL_SIZE/2;
+    task_setup(ts, id, root_id, sin, sout);
 
     return id;
 }
@@ -107,8 +132,7 @@ uint64_t sched_task_create(uint64_t root_id, kcomm_t **sin, kcomm_t **sout) {
     ts->cr3 = mman_get_root_cr3(root_id);
     avl_insert(&task_root, (void *)id, (void *)root_id);
 
-    uint64_t unused;
-    task_setup(id, root_id, sin, sout, &unused);
+    task_setup(ts, id, root_id, sin, sout);
 
     return id;
 }

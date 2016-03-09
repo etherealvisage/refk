@@ -22,11 +22,14 @@ int queue_size;
 static void remove_from_queue(uint64_t id);
 
 // task data structures
-static void process(queue_entry *q) {
+static int process(queue_entry *q) {
     sched_in_packet_t in;
     sched_out_packet_t status;
     uint64_t in_size;
+    int ret = 0;
     while(!kcomm_get(q->in, &in, &in_size)) {
+        d_printf("Processing packet of type %x\n", in.type);
+        ret = 1;
         status.type = in.type;
         status.req_id = in.req_id;
         status.result = 0;
@@ -103,6 +106,8 @@ static void process(queue_entry *q) {
 
         if(status.req_id) kcomm_put(q->out, &status, sizeof(status));
     }
+
+    return ret;
 }
 
 static void remove_from_queue(uint64_t id) {
@@ -129,9 +134,23 @@ void listen(task_state_t *hw_task) {
 
     d_printf("Total number of queue entries: %x\n", queue_size);
     while(1) {
+        int any = 0;
         for(int i = 0; i < queue_size; i ++) {
-            process(queue + i);
+            any |= process(queue + i);
+        }
+        if(!any) {
+            d_printf("done with everything on incoming sched queues\n");
+            __asm__ ("int $0xff");
         }
         // TODO: yield timeslice here
+    }
+}
+
+void process_for(uint64_t task_id) {
+    for(int i = 0; i < queue_size; i ++) {
+        if(queue[i].task_id == task_id) {
+            process(queue + i);
+            break;
+        }
     }
 }

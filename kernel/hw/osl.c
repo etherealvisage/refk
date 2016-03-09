@@ -12,7 +12,14 @@
 
 uint64_t last_map = MAP_BEGIN;
 
+uint64_t this_id;
+kcomm_t *schedin, *schedout;
+
 ACPI_STATUS AcpiOsInitialize() {
+    d_printf("initializing...\n");
+    __asm__ __volatile__("mov %%gs:0x00, %%rax" : "=a"(this_id));
+    __asm__ __volatile__("mov %%gs:0x08, %%rax" : "=a"(schedin));
+    __asm__ __volatile__("mov %%gs:0x10, %%rax" : "=a"(schedout));
     return 0;
 }
 
@@ -53,6 +60,19 @@ ACPI_STATUS AcpiOsPhysicalTableOverride(ACPI_TABLE_HEADER *ExistingTable,
 
 void *AcpiOsMapMemory(ACPI_PHYSICAL_ADDRESS PhysicalAddress,
     ACPI_SIZE Length) {
+    d_printf("mapping\n");
+
+    uint64_t *process_task = (void *)0xffffffffffe01400;
+    for(int i = 0; i < 32; i ++) {
+        d_printf("process_task[%x] = %x\n", i, process_task[i]);
+    }
+
+    if(this_id == 0) {
+        // NOTE: this is here in case MapMemory is called before anything else
+        __asm__ __volatile__("mov %%gs:0x00, %%rax" : "=a"(this_id));
+        __asm__ __volatile__("mov %%gs:0x08, %%rax" : "=a"(schedin));
+        __asm__ __volatile__("mov %%gs:0x10, %%rax" : "=a"(schedout));
+    }
 
     uint64_t begin = PhysicalAddress & ~0xfff;
     uint64_t end = (PhysicalAddress + Length + 0xfff) & ~0xfff;
@@ -71,22 +91,29 @@ void *AcpiOsMapMemory(ACPI_PHYSICAL_ADDRESS PhysicalAddress,
 
     kcomm_put(schedin, &in, sizeof(in));
 
+    d_printf("requesting that scheduler process requests for %x\n", this_id);
+
+    __asm__ __volatile__("int $0xfe" : : "a"(this_id));
+
+    d_printf("waiting for map...\n");
+
     sched_out_packet_t out;
     uint64_t out_len;
     while(kcomm_get(schedout, &out, &out_len) || out.req_id != in.req_id) {}
+
+    d_printf("mapped!\n");
 
     return (uint8_t *)ret + (PhysicalAddress & 0xfff);
 }
 
 void AcpiOsUnmapMemory(void *where, ACPI_SIZE length) {
-    // TODO
-    return;
-
+    d_printf("unmapping\n");
     uint64_t begin = (uint64_t)where & ~0xfff;
     uint64_t end = ((uint64_t)where + length + 0xfff) & ~0xfff;
 
+
     sched_in_packet_t in;
-    in.type = SCHED_MAP_PHYSICAL;
+    in.type = SCHED_UNMAP;
     in.req_id = 0; // no confirmation requested
     in.unmap.root_id = 0;
     in.unmap.size = end-begin;

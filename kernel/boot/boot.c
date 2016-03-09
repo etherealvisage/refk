@@ -24,7 +24,7 @@ void _start() {
 
     // TODO: perform early ACPI tables read for I/O APIC information
 
-    ioapic_init();
+    //ioapic_init();
 
     d_printf("boot initialization completed\n");
 

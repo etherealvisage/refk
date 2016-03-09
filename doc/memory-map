@@ -1,3 +1,5 @@
+Global memory map:
+
 0x            10 0000 (size XKB):       initial low-memory location
 0xffff 8000 0000 0000 (size XKB):       task communication channels
 0xffff c000 0000 0000 (size 4GB):       physical memory map
@@ -9,3 +11,8 @@
 0xffff ffff ffc0 3000 (size XKB):       ISR wrapper code location
 0xffff ffff ffe0 0000 (size 4KB):       task transfer code location
 0xffff ffff ffe0 1000 (size XKB):       task state location
+
+Task-local storage page:
+0x000  (size 8 bytes):  64-bit task ID
+0x008  (size 8 bytes):  scheduler-in communication channel address
+0x010  (size 8 bytes):  scheduler-out communication channel address

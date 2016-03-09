@@ -312,7 +312,116 @@ int_isr_%1:
 	pop	rax
 
 	iretq
+%endmacro
 
+%macro delay_isr 1
+int_isr_%1:
+	; exception code on TOS
+	; save rax/rbx/rdi/rsi
+	push	rax
+	push	rbx
+	push	rdi
+	push	rsi
+
+	xor	rbx, rbx
+	; determine if this has an exception code or not
+	; uses assumption that RIP >= 0x1000
+	; read the second element of the iret region
+	; if it's CS, it'll be < 0x1000
+	cmp	qword [rsp + 32 + 8], 0x1000
+	jb	.skip_code
+
+	; save exception code to rbx
+	mov	rbx, qword [rsp + 32]
+
+	; shift the stack
+	lea	rdi, [rsp + 32]
+	lea	rsi, [rsp + 24]
+	cld
+	movsq
+	movsq
+	movsq
+	movsq
+	add	rsp, 8
+
+.skip_code:
+	mov	rsi, [isr_task_region + %1*8]
+	cmp	qword rsi, 0
+	je	.skip_task
+
+	mov	qword [rsi + 5*8], %1 ; rdi
+	mov	qword [rsi + 4*8], rbx ; rsi
+	mov	rdi, qword [task_state_region]
+	mov	qword [rsi + 3*8], rdi ; rdx
+
+	call	transfer_control
+.skip_task:
+	pop	rsi
+	pop	rdi
+	pop	rbx
+	pop	rax
+
+	push	rcx
+	mov	rcx, 10 ;0x10000000
+	.loop:
+	loop	.loop
+	pop	rcx
+
+	iretq
+%endmacro
+
+
+%macro test_isr 1
+int_isr_%1:
+	; exception code on TOS
+	; save rax/rbx/rdi/rsi
+	push	rax
+	push	rbx
+	push	rdi
+	push	rsi
+
+	xor	rbx, rbx
+	; determine if this has an exception code or not
+	; uses assumption that RIP >= 0x1000
+	; read the second element of the iret region
+	; if it's CS, it'll be < 0x1000
+	cmp	qword [rsp + 32 + 8], 0x1000
+	jb	.skip_code
+
+	; save exception code to rbx
+	mov	rbx, qword [rsp + 32]
+
+	; shift the stack
+	lea	rdi, [rsp + 32]
+	lea	rsi, [rsp + 24]
+	cld
+	movsq
+	movsq
+	movsq
+	movsq
+	add	rsp, 8
+
+.skip_code:
+	mov	rsi, [isr_task_region + %1*8]
+	cmp	qword rsi, 0
+	je	.skip_task
+
+	mov	qword [rsi + 5*8], %1 ; rdi
+	mov	qword [rsi + 4*8], rbx ; rsi
+	mov	rdi, qword [task_state_region]
+	mov	qword [rsi + 3*8], rdi ; rdx
+
+	call	transfer_control
+.skip_task:
+	pop	rsi
+	pop	rdi
+	pop	rbx
+	pop	rax
+
+	.loop:
+	jmp	.loop
+
+	iretq
 %endmacro
 
 basic_isr 0
@@ -328,7 +437,7 @@ basic_isr 9
 basic_isr 10
 basic_isr 11
 basic_isr 12
-basic_isr 13
+test_isr 13
 basic_isr 14
 basic_isr 15
 basic_isr 16
@@ -569,5 +678,5 @@ basic_isr 250
 basic_isr 251
 basic_isr 252
 basic_isr 253
-basic_isr 254
-basic_isr 255
+delay_isr 254
+delay_isr 255
