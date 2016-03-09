@@ -11,6 +11,7 @@
 #include "../scheduler/interface.h"
 
 #include "osl.h"
+#include "pci.h"
 
 #define MAP_BEGIN 0x70000000
 
@@ -90,7 +91,24 @@ void AcpiOsFree(void *Memory) {
 ACPI_STATUS AcpiOsReadPciConfiguration(ACPI_PCI_ID *PciId, UINT32 Reg,
     UINT64 *Value, UINT32 Width) {
 
-    d_printf("TODO: readpciconfig\n");
+    //d_printf("Reading PCI config: reg %x width %x\n", Reg, Width);
+
+    if(Width == 8) {
+        uint32_t r = pci_readconfig(PciId->Bus, PciId->Device, PciId->Function,
+            Reg);
+        *Value = (uint64_t) ((r >> (8*(Reg & 3))) & 0xff);
+    }
+    else if(Width == 16) {
+        uint32_t r = pci_readconfig(PciId->Bus, PciId->Device, PciId->Function,
+            Reg);
+        *Value = (uint64_t) ((r >> (16*(Reg & 1))) & 0xffff);
+    }
+    else if(Width == 32) {
+        uint32_t r = pci_readconfig(PciId->Bus, PciId->Device, PciId->Function,
+            Reg);
+        *Value = (uint64_t) r;
+    }
+
     return 0;
 }
 
