@@ -20,11 +20,6 @@ env.Library("hw", hw_sources)
 env.KernelProc("hw.elf", ["libhw.a", "libklib.a"])
 env.Image("images/hw.h", "hw.elf")
 
-boot_sources = Glob("boot/*.c")
-env.Library("boot", boot_sources)
-env.KernelProc("boot.elf", ["libboot.a", "libklib.a"])
-env.Image("images/boot.h", "boot.elf")
-
 env.Library("kernel", Glob("*.c"))
 env.Assemble("multiboot.o", "multiboot.s")
 env.Kernel("kernel.bin", ["multiboot.o", "libkernel.a", "libklib.a"])

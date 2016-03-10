@@ -3,9 +3,7 @@
 
 #include <stdint.h>
 
-// should only be called once
-void lapic_init(void);
-// should be called once per CPU, and calling per task is not harmful
+// should be called once per CPU, but per-task is fine
 void lapic_setup(void);
 
 uint8_t lapic_id(void);

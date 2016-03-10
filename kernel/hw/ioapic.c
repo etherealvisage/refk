@@ -3,10 +3,10 @@
 
 #include "ioapic.h"
 
-#define IOAPIC_BASE 0xfec00000
+#define IOAPIC_ADDR_REG (base_address)
+#define IOAPIC_DATA_REG (base_address + 0x10)
 
-#define IOAPIC_ADDR_REG IOAPIC_BASE
-#define IOAPIC_DATA_REG (IOAPIC_BASE + 0x10)
+static uint64_t base_address;
 
 static uint32_t ioapic_read(uint64_t index) {
     phy_write32(IOAPIC_ADDR_REG, index);
@@ -46,8 +46,9 @@ static void ioapic_set_irq(uint8_t irq, uint64_t apic_id, uint8_t vector) {
     ioapic_write(low_index, low);
 }
 
-void ioapic_init() {
-    for(int i = 0; i < 24; i ++) {
-        ioapic_set_irq(i, lapic_id(), 0x80 + i);
+void ioapic_init(uint64_t address, uint64_t irqbase, uint64_t irqcount) {
+    base_address = address;
+    for(uint64_t i = 0; i < irqcount; i ++) {
+        ioapic_set_irq(i, lapic_id(), 0x80 + irqbase + i);
     }
 }

@@ -12,22 +12,15 @@
 
 uint64_t lapic_base;
 
-static void disable_pic();
 static void lapic_enable();
 
 static uint32_t get_reg(uint64_t index);
 static void set_reg(uint64_t index, uint32_t value);
 
-void lapic_init() {
-    disable_pic();
-}
-
 void lapic_setup() {
     lapic_base = kmsr_read(MSR_APIC_BASE) & ~0xfff;
 
     lapic_enable();
-
-    // TODO: set up timer...
 }
 
 uint8_t lapic_id() {
@@ -35,7 +28,6 @@ uint8_t lapic_id() {
 }
 
 void lapic_enable() {
-    __asm__ __volatile__("nop");
     // set bit 11 in the APIC_BASE MSR to enable the APIC
     uint32_t base = kmsr_read(MSR_APIC_BASE);
     base |= 1<<11;
@@ -52,28 +44,6 @@ static uint32_t get_reg(uint64_t index) {
 
 static void set_reg(uint64_t index, uint32_t value) {
     phy_write32(lapic_base + index * 0x10, value);
-}
-
-static void disable_pic() {
-    /* Set ICW1 */
-    koutb(0x20, 0x11);
-    koutb(0xa0, 0x11);
-
-    /* Set ICW2 (IRQ base offsets) */
-    koutb(0x21, 0xe0);
-    koutb(0xa1, 0xe8);
-
-    /* Set ICW3 */
-    koutb(0x21, 4);
-    koutb(0xa1, 2);
-
-    /* Set ICW4 */
-    koutb(0x21, 1);
-    koutb(0xa1, 1);
-
-    /* Set OCW1 (interrupt masks) */
-    koutb(0x21, 0xff);
-    koutb(0xa1, 0xff);
 }
 
 void lapic_send_eoi() {

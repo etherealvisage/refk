@@ -13,6 +13,14 @@ const uint8_t boot_image[] = {
 #include "images/boot.h"
 };
 
+const uint8_t scheduler_image[] = {
+#include "images/scheduler.h"
+};
+
+const uint8_t hw_image[] = {
+#include "images/hw.h"
+};
+
 void kmain(uint64_t *mem) {
     d_init(); // set up the serial port
     d_printf("Rebooting...\n");
@@ -53,10 +61,29 @@ void kmain(uint64_t *mem) {
 
     void (*transfer)(void *, void *) = (void *)0xffffffffffe00000;
 
-    task_state_t *task = task_create();
-    task_load_elf(task, boot_image, 0x10000);
+    // use TASK_MEM(1) for scheduler task
+    task_state_t *schts = task_create();
+    *TASK_MEM(1) = *schts;
+    schts->state = 0;
+    schts = TASK_MEM(1);
+    task_load_elf(TASK_MEM(1), scheduler_image, 0x10000);
+    // pass in the root CR3 for the boot process
+    TASK_MEM(1)->rdi = kmem_current();
 
-    transfer(0, task);
+    // use TASK_MEM(2) for hw task
+    task_state_t *hwts = task_create();
+    *TASK_MEM(2) = *hwts;
+    hwts->state = 0;
+    hwts = TASK_MEM(2);
+    task_load_elf(hwts, hw_image, 0x10000);
+
+    // pass in the task state for the hw thread into the scheduler
+    TASK_MEM(1)->rsi = (uint64_t)TASK_MEM(2);
+
+    d_printf("Transferring!\n");
+
+    // remove the current thread and swap to the scheduler
+    transfer(0, TASK_MEM(1));
 
     // should never be reached!
     while(1) {}

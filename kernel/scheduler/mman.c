@@ -21,17 +21,22 @@ void mman_init(uint64_t bootproc_cr3) {
     d_printf("mman_init()\n");
     kmem_setup();
 
+    d_printf("initializing AVL trees\n");
     avl_initialize(&root_map, avl_ptrcmp, 0);
     avl_initialize(&root_refcount, avl_ptrcmp, 0);
     avl_initialize(&page_refcount, avl_ptrcmp, 0);
 
+    d_printf("importing current root\n");
     this_root_id = import_root(kmem_current());
     mman_increment_root(this_root_id);
 
-    // release memory from boot process
+    d_printf("importing boot root and freeing\n");
+    // mark memory from boot process
     uint64_t bootproc_id = import_root(bootproc_cr3);
-    mman_increment_root(bootproc_id);
-    mman_decrement_root(bootproc_id);
+    //d_printf("imported, inc/dec...\n");
+    //mman_increment_root(bootproc_id);
+    //mman_decrement_root(bootproc_id);
+    //d_printf("finished mman init\n");
 }
 
 static uint64_t paging_addr_create(uint64_t root_address, uint64_t vaddr,
@@ -309,7 +314,6 @@ void mman_decrement_root(uint64_t root) {
         remove_helper(cr3, 0);
 
         decrement_page(cr3);
-        d_printf("Removed root with CR3 %x\n", cr3);
     }
 }
 

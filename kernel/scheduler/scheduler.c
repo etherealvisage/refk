@@ -60,12 +60,13 @@ static void process(uint64_t vector, uint64_t __attribute__((unused)) excode,
 
 void _start(uint64_t bootproc_cr3, task_state_t *hw_task) {
     d_printf("scheduler!\n");
-    lapic_setup();
+    //lapic_setup();
     sheap_init();
 
     // init local components
     mman_init(bootproc_cr3);
     task_init();
+
 
     task_state_t *tick_ts = task_create();
     task_set_local(tick_ts, tick, tick_stack + 1024);
