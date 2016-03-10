@@ -75,6 +75,8 @@
 #define ACPI_SEMAPHORE              semaphore_t *
 #define ACPI_CPU_FLAGS              unsigned long
 
+#define ACPI_MISALIGNMENT_NOT_SUPPORTED
+
 /*
  * Overrides for in-kernel ACPICA
  */

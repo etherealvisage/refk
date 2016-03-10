@@ -137,9 +137,8 @@ void listen(task_state_t *hw_task) {
             any |= process(queue + i);
         }
         if(!any) {
-            __asm__ ("int $0xff");
+            __asm__ __volatile__("int $0xff");
         }
-        // TODO: yield timeslice here
     }
 }
 

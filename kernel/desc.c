@@ -73,12 +73,14 @@ void desc_init() {
     gdt_set_code(3, 3);
 
     /* load new GDT */
-    {
-        uint8_t gdt_pointer[10];
-        *(uint16_t *)gdt_pointer = 0xffff;
-        *(uint64_t *)(gdt_pointer+2) = DESC_GDT_ADDR;
-        __asm__ __volatile__("lgdt 0(%%rax)" : : "a"(&gdt_pointer));
-    }
+    __asm__ __volatile__(
+        "pushq %%rax \n"
+        "sub $2, %%rsp \n"
+        "movw $0xffff, 0(%%rsp) \n"
+        "lgdt 0(%%rsp) \n"
+        "add $10, %%rsp \n"
+        :
+        : "a"(DESC_GDT_ADDR));
 
     uint64_t idt_page = kmem_getpage();
     kmem_map(kmem_boot(), DESC_IDT_ADDR, idt_page, KMEM_MAP_DEFAULT);
@@ -103,11 +105,12 @@ void desc_init() {
     }
 
     /* load new IDT */
-    {
-        uint8_t idt_pointer[10];
-        *(uint16_t *)idt_pointer = 0xffff;
-        *(uint64_t *)(idt_pointer+2) = DESC_IDT_ADDR;
-        __asm__ __volatile__("lidt 0(%%rax)" : : "a"(&idt_pointer));
-    }
-
+    __asm__ __volatile__(
+        "pushq %%rax \n"
+        "sub $2, %%rsp \n"
+        "movw $0xffff, 0(%%rsp) \n"
+        "lidt 0(%%rsp) \n"
+        "add $10, %%rsp \n"
+        :
+        : "a"(DESC_IDT_ADDR));
 }

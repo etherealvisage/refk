@@ -9,32 +9,32 @@
 #define PORT_BASE 0x3f8
 
 void koutb(uint16_t port, uint8_t value) {
-    __asm__("out %%al, (%%dx)" : : "a"(value), "d"(port));
+    __asm__ __volatile__("out %%al, (%%dx)" : : "a"(value), "d"(port));
 }
 
 void koutw(uint16_t port, uint16_t value) {
-    __asm__("out %%ax, (%%dx)" : : "a"(value), "d"(port));
+    __asm__ __volatile__("out %%ax, (%%dx)" : : "a"(value), "d"(port));
 }
 
 void koutd(uint16_t port, uint32_t value) {
-    __asm__("out %%eax, (%%dx)" : : "a"(value), "d"(port));
+    __asm__ __volatile__("out %%eax, (%%dx)" : : "a"(value), "d"(port));
 }
 
 uint8_t kinb(uint16_t port) {
     uint8_t ret = 0;
-    __asm__("in (%%dx), %%al" : "=a"(ret) : "d"(port));
+    __asm__ __volatile__("in (%%dx), %%al" : "=a"(ret) : "d"(port));
     return ret;
 }
 
 uint16_t kinw(uint16_t port) {
     uint16_t ret = 0;
-    __asm__("in (%%dx), %%ax" : "=a"(ret) : "d"(port));
+    __asm__ __volatile__("in (%%dx), %%ax" : "=a"(ret) : "d"(port));
     return ret;
 }
 
 uint32_t kind(uint16_t port) {
     uint32_t ret = 0;
-    __asm__("in (%%dx), %%eax" : "=a"(ret) : "d"(port));
+    __asm__ __volatile__("in (%%dx), %%eax" : "=a"(ret) : "d"(port));
     return ret;
 }
 
@@ -131,12 +131,13 @@ void phy_write(uint64_t address, const void *buffer, uint64_t count) {
 
 uint64_t kmsr_read(uint64_t index) {
     uint32_t low, high;
-    __asm__("rdmsr" : "=a"(low), "=d"(high) : "c"(index));
+    __asm__ __volatile__("rdmsr" : "=a"(low), "=d"(high) : "c"(index));
     return low | ((uint64_t)high << 32);
 }
 
 void kmsr_write(uint64_t index, uint64_t value) {
-    __asm__("wrmsr" : : "c"(index), "a"(value & 0xffffffff), "d"(value >> 32));
+    __asm__ __volatile__("wrmsr" : : "c"(index), "a"(value & 0xffffffff),
+        "d"(value >> 32));
 }
 
 void *memset(void *memory, uint8_t v, uint64_t count) {

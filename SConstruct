@@ -69,11 +69,12 @@ def builders(env):
     env.Append(BUILDERS = {"Kernel": kernel})
 
 def gcc(env):
-    env.Append(CFLAGS = "-std=c99")
+    env.Append(CFLAGS = "-std=c99 -O3")
     env.Append(CFLAGS = "-W -Wall -Wextra -nostdlib -nodefaultlibs -ffreestanding")
     env.Append(CFLAGS = "-mcmodel=large -m64 -mno-red-zone")
     env.Append(CFLAGS = "-Werror -Wno-error=unused-variable -Wno-error=unused-function")
     env.Append(CFLAGS = "-Wno-error=unused-parameter")
+    env.Append(CFLAGS = "-mno-sse -mno-mmx")
     env.Append(CFLAGS = "-I kernel/")
     env.Append(CFLAGS = "-fdiagnostics-color=always")
 

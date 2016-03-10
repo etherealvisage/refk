@@ -1,5 +1,9 @@
 #include <stdint.h>
 
+#define LACKS_STDLIB_H
+#define ABORT {}
+
+
 void *rlib_expand_heap(int64_t by);
 /*
   This is a version (aka dlmalloc) of malloc/free/realloc written by

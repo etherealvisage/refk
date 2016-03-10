@@ -10,18 +10,19 @@ void synch_initspin(spinlock_t *lock) {
     lock->intrflag = 0;
 }
 
-void synch_spinlock(spinlock_t *lock) {
+/* Since this uses a local label, prevent it from being inlined later. */
+void __attribute__ ((noinline)) synch_spinlock(spinlock_t *lock) {
     __asm__ __volatile__(
         "pushfq \n"
         "pop    %%rax \n"
         "and    $0x200, %%rax \n"
         "mov    %%eax, 4(%%rdx) \n"
         "cli \n"
-        "lock_tryagain: \n"
+        ".Llock_tryagain: \n"
         "xor        %%rax, %%rax \n"
         "mov        $1, %%rbx \n"
         "lock cmpxchgl %%ebx, 0(%%rdx) \n"
-        "jnz        lock_tryagain \n"
+        "jnz        .Llock_tryagain \n"
         :
         : "d"(lock), "a"(0), "b"(0)
     );
