@@ -8,4 +8,6 @@ uint32_t pci_readconfig(uint32_t bus, uint32_t slot, uint32_t fun,
 void pci_writeconfig(uint32_t bus, uint32_t slot, uint32_t fun,
     uint32_t off, uint32_t value);
 
+void pci_probe_all();
+
 #endif

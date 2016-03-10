@@ -80,8 +80,6 @@ void kmain(uint64_t *mem) {
     // pass in the task state for the hw thread into the scheduler
     TASK_MEM(1)->rsi = (uint64_t)TASK_MEM(2);
 
-    d_printf("Transferring!\n");
-
     // remove the current thread and swap to the scheduler
     transfer(0, TASK_MEM(1));
 

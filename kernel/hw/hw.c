@@ -42,7 +42,7 @@ static void process_pci_device(ACPI_HANDLE object) {
 static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
     void *context, void **ret) {
 
-    //d_printf("device %x:\n", object);
+    d_printf("device %x:\n", object);
     //d_printf("    nesting: %x\n", nesting);
 
     ACPI_BUFFER buf;
@@ -73,6 +73,16 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
         }
     }
 
+    d_printf("    class code length: %x\n", info->ClassCode.Length);
+
+    if(!strcmp(info->HardwareId.String, "PNP0A03")
+        || !strcmp(info->HardwareId.String, "PNP0A08")) {
+
+        d_printf("        found PCI root!\n");
+        //info->Address
+    }
+
+#if 0
     // check parent type
     ACPI_HANDLE parent;
     AcpiGetParent(object, &parent);
@@ -89,11 +99,12 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
                 sheap_free(cloned);
 
                 // PNP0A03: PCI root device
-                if(!strcmp(pinfo->HardwareId.String, "PNP0A03")) process_pci_device(object);
+                if(!strcmp(pinfo->HardwareId.String, "PNP0A03")
+                    || !strcmp(pinfo->HardwareId.String, "PNP0A08")) process_pci_device(object);
             }
         }
     }
-
+#endif
     if(info->Valid & ACPI_VALID_ADR) {
         d_printf("    address: %x\n", info->Address);
     }
@@ -185,27 +196,14 @@ void _start() {
 
     find_apics();
 
-    //madt_table->Address;
-    //d_printf("madt flags: %x\n", madt_table->Flags);
-    while(1) {}
-    //apic_table->Length
-
-    /*
-    d_printf("we have the tables! ret: %x\n", ret);
-    for(int i = 0; i < 32; i ++) {
-        if(tables[i].Address == 0) break;
-        d_printf("    address: %x\n", tables[i].Address);
-        char name[5];
-        memcpy(name, tables[i].Signature.Ascii, 4);
-        name[4] = 0;
-        d_printf("    name: %s\n", name);
-    }
-    */
-
     AcpiInitializeSubsystem();
     AcpiLoadTables();
     AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION);
     AcpiInitializeObjects(ACPI_FULL_INITIALIZATION);
+
+    
+
+    pci_probe_all();
 
     {
         void *r;
