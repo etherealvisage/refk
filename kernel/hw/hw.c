@@ -75,11 +75,48 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
 
     d_printf("    class code length: %x\n", info->ClassCode.Length);
 
-    if(!strcmp(info->HardwareId.String, "PNP0A03")
-        || !strcmp(info->HardwareId.String, "PNP0A08")) {
+    if(info->HardwareId.Length &&
+        !strncmp(info->HardwareId.String, "PNP0A08", info->HardwareId.Length)) {
 
         d_printf("        found PCI root!\n");
-        //info->Address
+
+        #if 0
+        d_printf("        evaluating _PRT...\n");
+        ACPI_BUFFER retbuf;
+        retbuf.Length = ACPI_ALLOCATE_BUFFER;
+        ACPI_STATUS ret = AcpiEvaluateObject(object, "_PRT", 0, &retbuf);
+        if(ret != AE_OK) {
+            d_printf("        failed to evaluate! code: %x\n", ret);
+        }
+        else {
+            d_printf("        evaluated!\n");
+            d_printf("        size: %x\n", retbuf.Length);
+            /*for(size_t i = 0; i < retbuf.Length; i ++) {
+                d_printf("            value[%x] = %x\n", i, ((uint8_t *)retbuf.Pointer)[i]);
+            }*/
+
+            AcpiOsFree(retbuf.Pointer);
+        }
+        #endif
+        d_printf("Getting routing table...\n");
+        ACPI_BUFFER retbuf;
+        retbuf.Length = ACPI_ALLOCATE_BUFFER;
+
+        ACPI_STATUS ret = AcpiGetIrqRoutingTable(object, &retbuf);
+        if(ret == AE_OK) {
+            d_printf("        Routing table size: %x\n", retbuf.Length);
+            uint64_t offset = 0;
+            while(offset+sizeof(ACPI_PCI_ROUTING_TABLE) <= retbuf.Length) {
+                ACPI_PCI_ROUTING_TABLE *routing = (void *)((uint8_t *)retbuf.Pointer + offset);
+                if(routing->Length == 0) break;
+                d_printf("            route %x's %x to %x (offset %x)\n",
+                    routing->Address, routing->SourceIndex, routing->Pin,
+                    offset);
+
+                offset += routing->Length;
+            }
+        }
+        else d_printf("        Routing table get failed: %x\n", ret);
     }
 
 #if 0
@@ -201,7 +238,18 @@ void _start() {
     AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION);
     AcpiInitializeObjects(ACPI_FULL_INITIALIZATION);
 
-    
+    // tell ACPI we're using the I/O APICs
+    {
+        ACPI_OBJECT mode;
+        mode.Type = ACPI_TYPE_INTEGER;
+        mode.Integer.Value = 1; // I/O APICs
+        ACPI_OBJECT_LIST list;
+        list.Pointer = &mode;
+        list.Count = 1;
+        ACPI_STATUS ret = AcpiEvaluateObject(0, "\\_PIC", &list, 0);
+        if(ret != AE_OK) d_printf("Failed to invoke \\_PIC: %x\n", ret);
+        else d_printf("Successfully told ACPI to use I/O APIC mode!\n");
+    }
 
     pci_probe_all();
 

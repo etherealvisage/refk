@@ -3,7 +3,7 @@
 
 //static klib_balloc_allocator_t allocator;
 static uint8_t allocator_memory[384];
-static uint8_t heap_memory[5][1<<20];
+static uint8_t heap_memory[6][1<<20];
 
 void sheap_init() {
     klib_balloc_setup_allocator((void *)allocator_memory,
@@ -20,9 +20,12 @@ void sheap_init() {
         heap_memory[3], 1<<20, 1024);
     klib_balloc_add_region((void *)allocator_memory,
         heap_memory[4], 1<<20, 4096);
+    klib_balloc_add_region((void *)allocator_memory,
+        heap_memory[5], 1<<20, 65536);
 }
 
 void *sheap_alloc(uint64_t size) {
+    //d_printf("Trying to allocate size %x\n", size);
     return klib_balloc_allocate_with((void *)allocator_memory,
         size);
 }

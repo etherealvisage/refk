@@ -48,5 +48,6 @@ void *memmove(void *dest, const void *src, uint64_t count);
 // string handling functions
 uint64_t strlen(const char *s);
 int strcmp(const char *s1, const char *s2);
+int strncmp(const char *s1, const char *s2, uint64_t maxlen);
 
 #endif
