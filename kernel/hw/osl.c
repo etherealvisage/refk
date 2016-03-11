@@ -3,10 +3,11 @@
 
 #include "klib/kcomm.h"
 #include "klib/kutil.h"
-#include "klib/sheap.h"
 #include "klib/synch.h"
 #include "klib/task.h"
 #include "klib/desc.h"
+
+#include "rlib/heap.h"
 
 #include "../scheduler/interface.h"
 
@@ -81,11 +82,11 @@ ACPI_STATUS AcpiOsGetPhysicalAddress(void *LogicalAddress,
 }
 
 void *AcpiOsAllocate(ACPI_SIZE Size) {
-    return sheap_alloc(Size);
+    return malloc(Size);
 }
 
 void AcpiOsFree(void *Memory) {
-    sheap_free(Memory);
+    free(Memory);
 }
 
 ACPI_STATUS AcpiOsReadPciConfiguration(ACPI_PCI_ID *PciId, UINT32 Reg,
@@ -213,7 +214,7 @@ ACPI_STATUS AcpiOsWriteMemory(ACPI_PHYSICAL_ADDRESS Address, UINT64 Value,
 ACPI_STATUS AcpiOsCreateSemaphore(UINT32 MaxUnits, UINT32 InitialUnits,
     ACPI_SEMAPHORE *OutHandle) {
 
-    semaphore_t *semaphore = sheap_alloc(sizeof(spinlock_t));
+    semaphore_t *semaphore = malloc(sizeof(spinlock_t));
 
     synch_initsemaphore(semaphore, InitialUnits);
 
@@ -222,7 +223,7 @@ ACPI_STATUS AcpiOsCreateSemaphore(UINT32 MaxUnits, UINT32 InitialUnits,
 }
 
 ACPI_STATUS AcpiOsDeleteSemaphore(ACPI_SEMAPHORE Handle) {
-    sheap_free(Handle);
+    free(Handle);
     return 0;
 }
 
@@ -239,14 +240,14 @@ ACPI_STATUS AcpiOsSignalSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units) {
 }
 
 ACPI_STATUS AcpiOsCreateLock(ACPI_SPINLOCK *OutHandle) {
-    spinlock_t *lock = sheap_alloc(sizeof(spinlock_t));
+    spinlock_t *lock = malloc(sizeof(spinlock_t));
     synch_initspin(lock);
     *OutHandle = lock;
     return !lock;
 }
 
 void AcpiOsDeleteLock(ACPI_SPINLOCK Handle) {
-    sheap_free(Handle);
+    free(Handle);
 }
 
 ACPI_CPU_FLAGS AcpiOsAcquireLock(ACPI_SPINLOCK Handle) {
@@ -261,7 +262,7 @@ void AcpiOsReleaseLock(ACPI_SPINLOCK Handle, ACPI_CPU_FLAGS Flags) {
 ACPI_STATUS AcpiOsInstallInterruptHandler(UINT32 InterruptLevel,
     ACPI_OSD_HANDLER Handler, void *Context) {
 
-    char *stack = sheap_alloc(1024);
+    char *stack = malloc(1024);
 
     task_state_t *ts = task_create();
     task_set_local(ts, Handler, stack + 1024);

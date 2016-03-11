@@ -17,7 +17,7 @@ env.Image("images/scheduler.h", "scheduler.elf")
 
 hw_sources = Glob("hw/*.c") + Glob("hw/acpica/*.c") + Glob("hw/drivers/*.c")
 env.Library("hw", hw_sources)
-env.KernelProc("hw.elf", ["libhw.a", "libklib.a"])
+env.KernelProc("hw.elf", ["libhw.a", "libklib.a", "../rlib/librlib.a"])
 env.Image("images/hw.h", "hw.elf")
 
 env.Library("kernel", Glob("*.c"))

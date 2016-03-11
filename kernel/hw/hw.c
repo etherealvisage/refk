@@ -1,6 +1,5 @@
 #include "klib/kutil.h"
 #include "klib/kcomm.h"
-#include "klib/sheap.h"
 
 #include "../scheduler/interface.h"
 
@@ -11,8 +10,11 @@
 #include "pci.h"
 #include "ioapic.h"
 
+#include "rlib/global.h"
+#include "rlib/heap.h"
+
 char *clone_string(const char *orig, uint64_t length) {
-    char *ret = sheap_alloc(length+1);
+    char *ret = malloc(length+1);
     memcpy(ret, orig, length);
     ret[length] = 0;
     return ret;
@@ -50,7 +52,7 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
 
     AcpiGetName(object, ACPI_FULL_PATHNAME, &buf);
     d_printf("    full name: %s\n", buf.Pointer);
-    sheap_free(buf.Pointer);
+    free(buf.Pointer);
 
     ACPI_DEVICE_INFO *info;
 
@@ -62,14 +64,14 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
     if(info->Valid & ACPI_VALID_HID) {
         char *cloned = clone_string(info->HardwareId.String, info->HardwareId.Length);
         d_printf("    hardware ID: %s\n", cloned);
-        sheap_free(cloned);
+        free(cloned);
     }
     if(info->Valid & ACPI_VALID_CID) {
         for(uint64_t i = 0; i < info->CompatibleIdList.Count; i ++) {
             char *cloned = clone_string(info->CompatibleIdList.Ids[i].String,
                 info->CompatibleIdList.Ids[i].Length);
             d_printf("    compatible hardware ID: %s\n", cloned);
-            sheap_free(cloned);
+            free(cloned);
         }
     }
 
@@ -80,24 +82,6 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
 
         d_printf("        found PCI root!\n");
 
-        #if 0
-        d_printf("        evaluating _PRT...\n");
-        ACPI_BUFFER retbuf;
-        retbuf.Length = ACPI_ALLOCATE_BUFFER;
-        ACPI_STATUS ret = AcpiEvaluateObject(object, "_PRT", 0, &retbuf);
-        if(ret != AE_OK) {
-            d_printf("        failed to evaluate! code: %x\n", ret);
-        }
-        else {
-            d_printf("        evaluated!\n");
-            d_printf("        size: %x\n", retbuf.Length);
-            /*for(size_t i = 0; i < retbuf.Length; i ++) {
-                d_printf("            value[%x] = %x\n", i, ((uint8_t *)retbuf.Pointer)[i]);
-            }*/
-
-            AcpiOsFree(retbuf.Pointer);
-        }
-        #endif
         d_printf("Getting routing table...\n");
         ACPI_BUFFER retbuf;
         retbuf.Length = ACPI_ALLOCATE_BUFFER;
@@ -119,29 +103,6 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
         else d_printf("        Routing table get failed: %x\n", ret);
     }
 
-#if 0
-    // check parent type
-    ACPI_HANDLE parent;
-    AcpiGetParent(object, &parent);
-    if(AcpiGetParent(object, &parent) == AE_OK) {
-        ACPI_OBJECT_TYPE parent_type;
-        AcpiGetType(parent, &parent_type);
-        if(parent_type == ACPI_TYPE_DEVICE) {
-            ACPI_DEVICE_INFO *pinfo;
-            AcpiGetObjectInfo(parent, &pinfo);
-            d_printf("    parent hardware ID length: %x\n", pinfo->HardwareId.Length);
-            if(pinfo->HardwareId.Length > 0) {
-                char *cloned = clone_string(pinfo->HardwareId.String, pinfo->HardwareId.Length);
-                d_printf("    parent hardware ID: %s\n", cloned);
-                sheap_free(cloned);
-
-                // PNP0A03: PCI root device
-                if(!strcmp(pinfo->HardwareId.String, "PNP0A03")
-                    || !strcmp(pinfo->HardwareId.String, "PNP0A08")) process_pci_device(object);
-            }
-        }
-    }
-#endif
     if(info->Valid & ACPI_VALID_ADR) {
         d_printf("    address: %x\n", info->Address);
     }
@@ -215,13 +176,14 @@ void find_apics() {
 }
 
 void _start() {
+    rlib_setup(RLIB_DEFAULT_HEAP);
+
     uint64_t own_id;
     kcomm_t *schedin, *schedout;
     __asm__ __volatile__("mov %%gs:0x00, %%rax" : "=a"(own_id));
     __asm__ __volatile__("mov %%gs:0x08, %%rax" : "=a"(schedin));
     __asm__ __volatile__("mov %%gs:0x10, %%rax" : "=a"(schedout));
 
-    sheap_init();
 
     ACPI_TABLE_DESC tables[32];
     ACPI_STATUS ret = AcpiInitializeTables(tables, 32, 0);

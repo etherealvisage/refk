@@ -98,6 +98,7 @@ else:
 
 # for non-debug versions
 #env.Append(CFLAGS = "-DNDEBUG")
+env.Append(CFLAGS = "-I .")
 
 Export("env")
 

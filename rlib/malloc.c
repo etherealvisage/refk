@@ -1,8 +1,19 @@
 #include <stdint.h>
 
-#define LACKS_STDLIB_H
-#define ABORT {}
+#include "klib/kutil.h" // for memset etc.
 
+#define LACKS_STDLIB_H
+#define LACKS_UNISTD_H
+#define LACKS_STRING_H
+#define LACKS_TIME_H
+#define LACKS_
+#define ABORT {}
+#define USE_DL_PREFIX
+#define HAVE_MMAP 0
+#define HAVE_MREMAP 0
+#define MORECORE rlib_expand_heap
+#define NO_MALLOC_STATS 1
+#define MALLOC_FAILURE_ACTION {}
 
 void *rlib_expand_heap(int64_t by);
 /*
@@ -1491,7 +1502,7 @@ DLMALLOC_EXPORT int mspace_mallopt(int, int);
 #include <unistd.h>     /* for sbrk, sysconf */
 #else /* LACKS_UNISTD_H */
 #if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__)
-extern void*     sbrk(ptrdiff_t);
+//extern void*     sbrk(ptrdiff_t);
 #endif /* FreeBSD etc */
 #endif /* LACKS_UNISTD_H */
 
