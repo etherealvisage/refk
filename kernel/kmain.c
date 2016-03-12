@@ -1,9 +1,11 @@
 #include <stdint.h>
 
+#include "klib/task.h"
+
 #include "kutil.h"
 #include "kmem.h"
-#include "klib/task.h"
 #include "desc.h"
+#include "status.h"
 
 const uint8_t transfer_image[] = {
 #include "images/transfer.h"
@@ -58,6 +60,9 @@ void kmain(uint64_t *mem) {
     for(int i = 0; i < 80*24*2; i ++) {
         phy_write8(0xb8000 + i, 0);
     }
+
+    // create status page
+    kmem_map(kmem_current(), STATUS_BASE, kmem_getpage(), KMEM_MAP_RO_DATA);
 
     void (*transfer)(void *, void *) = (void *)0xffffffffffe00000;
 

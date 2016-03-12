@@ -2,6 +2,7 @@ Global memory map:
 
 0x            10 0000 (size XKB):       initial low-memory location
 0xffff 8000 0000 0000 (size XKB):       task communication channels
+0xffff 9000 0000 0000 (size 4KB):       status page
 0xffff c000 0000 0000 (size 4GB):       physical memory map
 0xffff ffff 8000 0000 (size XKB):       initial high-memory location
 0xffff ffff ffa0 0000 (size 4KB):       Memory manager data (temporary)
@@ -17,3 +18,6 @@ Task-local storage page:
 0x008  (size 8 bytes):  scheduler-in communication channel address
 0x010  (size 8 bytes):  scheduler-out communication channel address
 0x400  (size 8 bytes):  (rlib) next sequence number for task
+
+Status page: (read-only)
+0x000  (size 8 bytes):  monotonically-increasing clock, in ns

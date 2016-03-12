@@ -6,6 +6,7 @@
 #define KMEM_BASE_ADDR 0xffffffffffa00000
 
 #define KMEM_MAP_DEFAULT 0x7
+#define KMEM_MAP_RO_DATA (0x1 | (1ULL<<63))
 #define KMEM_MAP_DATA (0x3 | (1ULL<<63))
 #define KMEM_MAP_CODE (0x5)
 

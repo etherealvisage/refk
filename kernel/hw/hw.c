@@ -104,6 +104,44 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
         }
         else d_printf("        Routing table get failed: %x\n", ret);
     }
+    else if(info->HardwareId.Length &&
+        !strncmp(info->HardwareId.String, "PNP0C0F", info->HardwareId.Length)) {
+
+        /*ACPI_BUFFER retbuf;
+        retbuf.Length = ACPI_ALLOCATE_BUFFER;
+        ACPI_STATUS ret = AcpiEvaluateObject(object, "_CRS", 0, &retbuf);
+
+        if(ret != AE_OK) {
+            d_printf("Failed to get CRS!\n");
+        }
+        else {
+            
+        }*/
+        ACPI_BUFFER retbuf;
+        retbuf.Length = ACPI_ALLOCATE_BUFFER;
+        AcpiGetPossibleResources(object, &retbuf);
+
+        d_printf("    possible resources:\n");
+        uint64_t offset = 0;
+        uint8_t *data = retbuf.Pointer;
+        while(offset < retbuf.Length) {
+            ACPI_RESOURCE *resource = (void *)(data + offset);
+            if(resource->Type == ACPI_RESOURCE_TYPE_END_TAG) break;
+
+            d_printf("        resource type: %x\n", resource->Type);
+            if(resource->Type == ACPI_RESOURCE_TYPE_EXTENDED_IRQ) {
+                d_printf("        IRQ resource!\n");
+                ACPI_RESOURCE_EXTENDED_IRQ *eirq = &resource->Data.ExtendedIrq;
+
+                d_printf("        count: %x\n", eirq->InterruptCount);
+                for(uint8_t i = 0; i < eirq->InterruptCount; i ++) {
+                    d_printf("            IRQ: %x\n", eirq->Interrupts[i]);
+                }
+            }
+
+            offset += resource->Length;
+        }
+    }
 
     if(info->Valid & ACPI_VALID_ADR) {
         d_printf("    address: %x\n", info->Address);
@@ -111,13 +149,6 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
 
     return AE_OK;
 }
-
-/*
-    General outline:
-    - parse ACPI tables
-    - set up ACPICA
-    - begin answering queries
-*/
 
 void _start() {
     rlib_setup(RLIB_DEFAULT_HEAP);
@@ -140,7 +171,7 @@ void _start() {
     AcpiLoadTables();
     AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION);
     AcpiInitializeObjects(ACPI_FULL_INITIALIZATION);
-    
+
     d_printf("Checkpoint\n");
 
     // tell ACPI we're using the I/O APICs

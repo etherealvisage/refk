@@ -2,6 +2,7 @@
 #include "kutil.h"
 #include "task.h"
 #include "desc.h"
+#include "status.h"
 
 uint64_t temp_last;
 uint64_t *last_unused = &temp_last;
@@ -114,6 +115,10 @@ uint64_t kmem_create_root() {
     // copy memory manager level 2 structure (2MB total)
     nentry = kmem_paging_addr_create(ret, KMEM_BASE_ADDR, 2);
     bentry = kmem_paging_addr_create(kmem_current(), KMEM_BASE_ADDR, 2);
+    phy_write64(nentry, phy_read64(bentry));
+    // copy status page level 2 structure (2MB total)
+    nentry = kmem_paging_addr_create(ret, STATUS_BASE, 2);
+    bentry = kmem_paging_addr_create(kmem_current(), STATUS_BASE, 2);
     phy_write64(nentry, phy_read64(bentry));
 
     return ret;
