@@ -46,7 +46,18 @@ static void ioapic_set_irq(uint8_t irq, uint64_t apic_id, uint8_t vector) {
     ioapic_write(low_index, low);
 }
 
-void ioapic_init(uint64_t address, uint64_t irqbase, uint64_t irqcount) {
+static uint64_t ioapic_get_linecount() {
+    const uint32_t index = 0x01;
+    uint32_t version = ioapic_read(index);
+
+    // maximum index is one byte at bits 16:23
+    // count is maximum index + 1
+    return ((version >> 16) & 0xff) + 1;
+}
+
+void ioapic_init(uint64_t address, uint64_t irqbase) {
+    uint64_t irqcount = ioapic_get_linecount();
+
     base_address = address;
     for(uint64_t i = 0; i < irqcount; i ++) {
         ioapic_set_irq(i, lapic_id(), 0x80 + irqbase + i);

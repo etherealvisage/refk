@@ -80,8 +80,6 @@ void _start(uint64_t bootproc_cr3, task_state_t *hw_task) {
     // the scheduler uses task #1.
     TASK_MEM(1)->state = TASK_STATE_VALID | TASK_STATE_RUNNABLE;
 
-    __asm__("sti");
-
     listen(hw_task);
 
     while(1) {}

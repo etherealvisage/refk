@@ -1,5 +1,6 @@
 #include "klib/kutil.h"
 #include "klib/kcomm.h"
+#include "klib/task.h"
 
 #include "../scheduler/interface.h"
 
@@ -9,6 +10,7 @@
 #include "osl.h"
 #include "pci.h"
 #include "ioapic.h"
+#include "apics.h"
 
 #include "rlib/global.h"
 #include "rlib/heap.h"
@@ -117,64 +119,6 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
     - begin answering queries
 */
 
-void find_apics() {
-    // get the APIC table
-    ACPI_TABLE_HEADER *madt_table_header;
-    ACPI_STATUS ret = AcpiGetTable(ACPI_SIG_MADT, 1, &madt_table_header);
-    if(ret != AE_OK) {
-        d_printf("Failed to find APIC table!\n");
-        while(1) {}
-    }
-    ACPI_TABLE_MADT *madt_table = (void *)madt_table_header;
-    if(madt_table->Flags & ACPI_MADT_PCAT_COMPAT) {
-        /* Disable 8259 PIC emulation. */
-        /* Set ICW1 */
-        koutb(0x20, 0x11);
-        koutb(0xa0, 0x11);
-
-        /* Set ICW2 (IRQ base offsets) */
-        koutb(0x21, 0xe0);
-        koutb(0xa1, 0xe8);
-
-        /* Set ICW3 */
-        koutb(0x21, 4);
-        koutb(0xa1, 2);
-
-        /* Set ICW4 */
-        koutb(0x21, 1);
-        koutb(0xa1, 1);
-
-        /* Set OCW1 (interrupt masks) */
-        koutb(0x21, 0xff);
-        koutb(0xa1, 0xff);
-    }
-
-    uint8_t *begin = (void *)(madt_table + 1);
-    uint64_t offset = 0;
-    while(offset + sizeof(*madt_table) < madt_table->Header.Length) {
-        ACPI_SUBTABLE_HEADER *sheader = (void *)(begin + offset);
-
-        //d_printf("Subtable header length: %x type: %x\n", sheader->Length, sheader->Type);
-        if(sheader->Type == ACPI_MADT_TYPE_IO_APIC) {
-            ACPI_MADT_IO_APIC *ioapic = (void *)sheader;
-            d_printf("Found I/O APIC! address: %x base: %x\n", ioapic->Address, ioapic->GlobalIrqBase);
-        }
-        else if(sheader->Type == ACPI_MADT_TYPE_LOCAL_APIC) {
-            ACPI_MADT_LOCAL_APIC *lapic = (void *)sheader;
-            d_printf("Found local APIC! procid: %x flags: %x\n", lapic->ProcessorId, lapic->LapicFlags);
-        }
-        else if(sheader->Type == ACPI_MADT_TYPE_INTERRUPT_OVERRIDE) {
-            ACPI_MADT_INTERRUPT_OVERRIDE *iover = (void *)sheader;
-            d_printf("Found interrupt override! ISA interrupt %x should be %x\n", iover->SourceIrq, iover->GlobalIrq);
-        }
-        else if(sheader->Type == ACPI_MADT_TYPE_LOCAL_APIC_NMI) {
-            ACPI_MADT_LOCAL_APIC_NMI *nmi = (void *)sheader;
-            d_printf("Found local APIC NMI! processor %x has NMI connected to %x\n", nmi->ProcessorId, nmi->Lint);
-        }
-        offset += sheader->Length;
-    }
-}
-
 void _start() {
     rlib_setup(RLIB_DEFAULT_HEAP);
 
@@ -184,7 +128,6 @@ void _start() {
     __asm__ __volatile__("mov %%gs:0x08, %%rax" : "=a"(schedin));
     __asm__ __volatile__("mov %%gs:0x10, %%rax" : "=a"(schedout));
 
-
     ACPI_TABLE_DESC tables[32];
     ACPI_STATUS ret = AcpiInitializeTables(tables, 32, 0);
 
@@ -193,12 +136,12 @@ void _start() {
         while(1) {}
     }
 
-    find_apics();
-
     AcpiInitializeSubsystem();
     AcpiLoadTables();
     AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION);
     AcpiInitializeObjects(ACPI_FULL_INITIALIZATION);
+    
+    d_printf("Checkpoint\n");
 
     // tell ACPI we're using the I/O APICs
     {
@@ -213,7 +156,11 @@ void _start() {
         else d_printf("Successfully told ACPI to use I/O APIC mode!\n");
     }
 
+    // initialize BSP local APIC and I/O APICs
+    apics_init();
+
     pci_probe_all();
+    d_printf("PCI devices probed\n");
 
     {
         void *r;

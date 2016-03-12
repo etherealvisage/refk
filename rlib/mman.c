@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+#include "klib/kutil.h" //  debugging
+
 #include "../kernel/scheduler/interface.h"
 
 #include "mman.h"
@@ -31,9 +33,11 @@ void rlib_anonymous(uint64_t address, uint64_t size) {
     __asm__ __volatile__("int $0xfe" : : "a"(own_id));
 
     sched_out_packet_t out;
+    out.req_id = 0;
     uint64_t length = sizeof(out);
     while(kcomm_get(schedout, &out, &length) || out.req_id != in.req_id) {
         length = sizeof(out);
+        __asm__ __volatile__("int $0xfe" : : "a"(own_id));
     }
 }
 

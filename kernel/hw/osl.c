@@ -230,7 +230,9 @@ ACPI_STATUS AcpiOsDeleteSemaphore(ACPI_SEMAPHORE Handle) {
 ACPI_STATUS AcpiOsWaitSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units,
     UINT16 Timeout) {
 
+    //d_printf("handle: %x\n", Handle);
     synch_semaphoredec(Handle, Units);
+    // TODO: timeout
     return 0;
 }
 

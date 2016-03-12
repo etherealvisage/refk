@@ -82,6 +82,7 @@ int kcomm_get(kcomm_t *kc, void *data, uint64_t *data_size) {
     uint32_t dsize;
     kcomm_get_data(kc, &dsize, sizeof(dsize));
     if(*data_size < dsize) {
+        d_printf("Skipping!\n");
         kcomm_skip_data(kc, dsize);
         *data_size = dsize;
     }

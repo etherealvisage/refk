@@ -25,9 +25,12 @@ static void remove_from_queue(uint64_t id);
 static int process(queue_entry *q) {
     sched_in_packet_t in;
     sched_out_packet_t status;
-    uint64_t in_size;
+    uint64_t in_size = sizeof(in);
     int ret = 0;
     while(!kcomm_get(q->in, &in, &in_size)) {
+        // reset in_size
+        in_size = sizeof(in);
+
         ret = 1;
         status.type = in.type;
         status.req_id = in.req_id;
@@ -45,6 +48,14 @@ static int process(queue_entry *q) {
             if(id == 0) id = sched_get_root(q->task_id);
             status.result = mman_physical(id, in.map_physical.address,
                 in.map_physical.phy_addr, in.map_physical.size);
+            break;
+        }
+        case SCHED_MAP_MIRROR: {
+            uint64_t id = in.map_mirror.root_id;
+            if(id == 0) id = sched_get_root(q->task_id);
+            status.result =
+                mman_mirror(id, in.map_mirror.address, in.map_mirror.oroot_id,
+                    in.map_mirror.oaddress, in.map_mirror.size);
             break;
         }
         case SCHED_UNMAP: {
@@ -99,11 +110,13 @@ static int process(queue_entry *q) {
             break;
         }
         default:
-            d_printf("Unknown sched_in packet type!\n");
+            d_printf("Unknown sched_in packet type! %x\n", in.type);
             break;
         }
 
-        if(status.req_id) kcomm_put(q->out, &status, sizeof(status));
+        if(status.req_id != 0) {
+            kcomm_put(q->out, &status, sizeof(status));
+        }
     }
 
     return ret;

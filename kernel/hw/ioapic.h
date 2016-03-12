@@ -3,6 +3,6 @@
 
 #include <stdint.h>
 
-void ioapic_init(uint64_t address, uint64_t irqbase, uint64_t irqcount);
+void ioapic_init(uint64_t address, uint64_t irqbase);
 
 #endif

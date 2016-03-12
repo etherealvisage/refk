@@ -9,5 +9,6 @@ uint64_t rlib_sequence() {
         "inc %%rax \n"
         "mov %%rax, %%gs:0x400 \n"
         : "=a"(ret));
+    if(!ret) return rlib_sequence();
     return ret;
 }
