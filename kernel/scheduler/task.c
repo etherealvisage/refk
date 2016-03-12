@@ -121,7 +121,7 @@ uint64_t sched_named_task(const char *name) {
 }
 
 uint64_t sched_task_create(uint64_t root_id, kcomm_t **sin, kcomm_t **sout) {
-    if(mman_is_root(root_id)) return -1;
+    if(!mman_is_root(root_id)) return -1;
 
     task_state_t *ts = task_create();
 

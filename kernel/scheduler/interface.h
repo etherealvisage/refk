@@ -6,6 +6,7 @@
 enum {
     SCHED_MAP_ANONYMOUS,
     SCHED_MAP_PHYSICAL,
+    SCHED_MAP_MIRROR,
     SCHED_UNMAP,
     SCHED_SET_NAME,
     SCHED_GET_NAMED,
@@ -60,6 +61,13 @@ typedef struct sched_in_packet_t {
             uint64_t phy_addr;
             uint64_t size;
         } map_physical;
+        struct {
+            uint64_t root_id;
+            uint64_t address;
+            uint64_t oroot_id;
+            uint64_t oaddress;
+            uint64_t size;
+        } map_mirror;
         struct {
             uint64_t root_id;
             uint64_t address;

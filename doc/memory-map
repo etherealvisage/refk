@@ -16,3 +16,4 @@ Task-local storage page:
 0x000  (size 8 bytes):  64-bit task ID
 0x008  (size 8 bytes):  scheduler-in communication channel address
 0x010  (size 8 bytes):  scheduler-out communication channel address
+0x400  (size 8 bytes):  (rlib) next sequence number for task

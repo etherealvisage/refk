@@ -54,6 +54,15 @@ static void kcomm_get_data(kcomm_t *kc, void *data, uint64_t data_size) {
     kc->ring_begin += data_size;
 }
 
+static void kcomm_skip_data(kcomm_t *kc, uint64_t data_size) {
+    // are we wrapping?
+    if(kc->ring_begin + data_size >= kc->data_length) {
+        kc->ring_begin = 0;
+    }
+
+    kc->ring_begin += data_size;
+}
+
 int kcomm_put(kcomm_t *kc, void *data, uint64_t data_size) {
     // is there enough space left?
     uint64_t req_size = data_size + 4;
@@ -72,8 +81,13 @@ int kcomm_get(kcomm_t *kc, void *data, uint64_t *data_size) {
     
     uint32_t dsize;
     kcomm_get_data(kc, &dsize, sizeof(dsize));
-    kcomm_get_data(kc, data, dsize);
-
+    if(*data_size < dsize) {
+        kcomm_skip_data(kc, dsize);
+        *data_size = dsize;
+    }
+    else {
+        kcomm_get_data(kc, data, dsize);
+    }
     *data_size = dsize;
 
     return 0;
