@@ -5,6 +5,8 @@
 
 enum {
     SCHED_FORWARD,
+    SCHED_WAIT,
+    SCHED_WAKE,
     SCHED_MAP_ANONYMOUS,
     SCHED_MAP_PHYSICAL,
     SCHED_MAP_MIRROR,
@@ -56,6 +58,15 @@ typedef struct sched_in_packet_t {
             uint64_t length;
             uint8_t data[0];
         } forward;
+        struct {
+            uint64_t address;
+            uint64_t value;
+        } wait;
+        struct {
+            uint64_t address;
+            uint64_t value;
+            uint64_t count;
+        } wake;
         struct {
             uint64_t root_id;
             uint64_t address;

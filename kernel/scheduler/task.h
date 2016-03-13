@@ -5,12 +5,15 @@
 
 #include "klib/kcomm.h"
 
+typedef struct synchobj_t synchobj_t;
+
 typedef struct task_info_t {
     uint64_t id;
     task_state_t *state;
     uint64_t root_id;
     kcomm_t *sin, *sout;
     kcomm_t *gin;
+    synchobj_t *synch;
 } task_info_t;
 
 void task_init();

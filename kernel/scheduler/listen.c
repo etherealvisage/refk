@@ -13,6 +13,7 @@
 #include "id.h"
 #include "mman.h"
 #include "task.h"
+#include "synch.h"
 
 typedef struct {
     uint64_t task_id;
@@ -30,6 +31,7 @@ static int process(queue_entry *q) {
     sched_out_packet_t status;
     uint64_t in_size = sizeof(in);
     int ret = 0;
+
     while(!kcomm_get(q->info->sin, &in, &in_size)) {
         // reset in_size
         in_size = sizeof(in);
@@ -38,6 +40,7 @@ static int process(queue_entry *q) {
         status.type = in.type;
         status.req_id = in.req_id;
         status.result = 0;
+
         switch(in.type) {
         case SCHED_FORWARD: {
             uint64_t length = in_size - offsetof(sched_in_packet_t,
@@ -50,23 +53,35 @@ static int process(queue_entry *q) {
             else status.result = -1;
             break;
         }
+        case SCHED_WAIT: {
+            // TODO: find object
+            synchobj_t *obj = 0;
+            synch_wait(obj, in.wait.value);
+            break;
+        }
+        case SCHED_WAKE: {
+            // TODO: find object
+            synchobj_t *obj = 0;
+            synch_wake(obj, in.wake.value, in.wake.count);
+            break;
+        }
         case SCHED_MAP_ANONYMOUS: {
             uint64_t id = in.map_anonymous.root_id;
-            if(id == 0) id = sched_get_info(q->task_id)->root_id;
+            if(id == 0) id = q->info->root_id;
             status.result = mman_anonymous(id, in.map_anonymous.address,
                 in.map_anonymous.size);
             break;
         }
         case SCHED_MAP_PHYSICAL: {
             uint64_t id = in.map_physical.root_id;
-            if(id == 0) id = sched_get_info(q->task_id)->root_id;
+            if(id == 0) id = q->info->root_id;
             status.result = mman_physical(id, in.map_physical.address,
                 in.map_physical.phy_addr, in.map_physical.size);
             break;
         }
         case SCHED_MAP_MIRROR: {
             uint64_t id = in.map_mirror.root_id;
-            if(id == 0) id = sched_get_info(q->task_id)->root_id;
+            if(id == 0) id = q->info->root_id;
             status.result =
                 mman_mirror(id, in.map_mirror.address, in.map_mirror.oroot_id,
                     in.map_mirror.oaddress, in.map_mirror.size);
@@ -74,7 +89,7 @@ static int process(queue_entry *q) {
         }
         case SCHED_UNMAP: {
             uint64_t id = in.unmap.root_id;
-            if(id == 0) id = sched_get_info(q->task_id)->root_id;
+            if(id == 0) id = q->info->root_id;
             status.result = mman_unmap(id, in.unmap.address,
                 in.unmap.size);
             break;
@@ -122,6 +137,7 @@ static int process(queue_entry *q) {
             sched_task_reap(id);
             remove_from_queue(id);
             sheap_free(info);
+
             break;
         }
         default:

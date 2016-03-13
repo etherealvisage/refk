@@ -20,6 +20,8 @@ uint64_t mman_own_root(void);
 uint64_t mman_make_root(void);
 uint64_t mman_import_root(uint64_t cr3);
 
+uint64_t mman_get_phy(uint64_t root, uint64_t address);
+
 void mman_increment_root(uint64_t root);
 void mman_decrement_root(uint64_t root);
 int mman_is_root(uint64_t root);

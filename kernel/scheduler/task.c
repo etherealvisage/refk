@@ -20,12 +20,6 @@
 
 avl_tree_t task_map; // map from task ID to task_info_t *
 avl_tree_t named_tasks; // map from strings to task IDs
-/*
-avl_tree_t task_map; // map from task ID to task_state_t *
-avl_tree_t task_root; // map from task ID to root ID
-avl_tree_t local_schedchannel; // map from task ID to (scheduler) address for scheduler channel
-avl_tree_t local_ginchannel; // map from task ID to (scheduler) address for global incoming channel
-*/
 
 void task_init() {
     avl_initialize(&task_map, avl_ptrcmp, 0);
@@ -73,6 +67,8 @@ static uint64_t add_storage(uint64_t root_id) {
 }
 
 static void task_setup(task_state_t *ts, task_info_t *info) {
+    // initially not waiting on a synch object
+    info->synch = 0;
 
     // point GS towards task-local storage
     ts->gs_base = add_storage(info->root_id);

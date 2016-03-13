@@ -18,25 +18,17 @@ static uint64_t import_root(uint64_t root);
 static void remove_helper(uint64_t root, int level);
 
 void mman_init(uint64_t bootproc_cr3) {
-    d_printf("mman_init()\n");
     kmem_setup();
 
-    d_printf("initializing AVL trees\n");
     avl_initialize(&root_map, avl_ptrcmp, 0);
     avl_initialize(&root_refcount, avl_ptrcmp, 0);
     avl_initialize(&page_refcount, avl_ptrcmp, 0);
 
-    d_printf("importing current root\n");
     this_root_id = import_root(kmem_current());
     mman_increment_root(this_root_id);
 
-    d_printf("importing boot root and freeing\n");
     // mark memory from boot process
-    uint64_t bootproc_id = import_root(bootproc_cr3);
-    //d_printf("imported, inc/dec...\n");
-    //mman_increment_root(bootproc_id);
-    //mman_decrement_root(bootproc_id);
-    //d_printf("finished mman init\n");
+    import_root(bootproc_cr3);
 }
 
 static uint64_t paging_addr_create(uint64_t root_address, uint64_t vaddr,
@@ -275,6 +267,16 @@ uint64_t mman_make_root() {
 
 uint64_t mman_import_root(uint64_t cr3) {
     return import_root(cr3);
+}
+
+uint64_t mman_get_phy(uint64_t root, uint64_t address) {
+    uint64_t cr3 = (uint64_t)avl_search(&root_refcount, (void *)root);
+    if(cr3 == 0) return -1;
+
+    uint8_t ok = 0;
+    uint64_t entry = kmem_paging_addr(cr3, (address & ~0xfff), 3, &ok);
+    if(!ok) return 0;
+    return (phy_read64(entry) & ~KMEM_FLAG_MASK) | (address & 0xfff);
 }
 
 void mman_increment_root(uint64_t root) {
