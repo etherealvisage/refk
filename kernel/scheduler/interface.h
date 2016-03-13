@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 enum {
+    SCHED_FORWARD,
     SCHED_MAP_ANONYMOUS,
     SCHED_MAP_PHYSICAL,
     SCHED_MAP_MIRROR,
@@ -50,6 +51,11 @@ typedef struct sched_in_packet_t {
     uint8_t type;
     uint64_t req_id;
     union {
+        struct {
+            uint64_t task_id;
+            uint64_t length;
+            uint8_t data[0];
+        } forward;
         struct {
             uint64_t root_id;
             uint64_t address;

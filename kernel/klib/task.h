@@ -11,6 +11,7 @@
 
 #define TASK_STATE_VALID    0x01
 #define TASK_STATE_RUNNABLE 0x02
+#define TASK_STATE_GATE     0x04
 
 typedef struct task_state_t {
     uint64_t rax;           // 0

@@ -81,7 +81,6 @@ transfer_control:
 	; TODO: remove this hack and use CPU-local storage
 	mov	qword [task_state_region], rsi
 
-
 	; restore basic segment registers
 	mov	rax, qword [rsi + 20*8] ; es
 	mov	es, ax

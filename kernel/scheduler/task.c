@@ -18,16 +18,18 @@
 
 #define TEMPORARY_MAP_ADDRESS 0x50000000
 
-avl_tree_t task_map;
-avl_tree_t task_root;
-avl_tree_t named_tasks;
-avl_tree_t local_channel;
+avl_tree_t task_map; // map from task ID to task_info_t *
+avl_tree_t named_tasks; // map from strings to task IDs
+/*
+avl_tree_t task_map; // map from task ID to task_state_t *
+avl_tree_t task_root; // map from task ID to root ID
+avl_tree_t local_schedchannel; // map from task ID to (scheduler) address for scheduler channel
+avl_tree_t local_ginchannel; // map from task ID to (scheduler) address for global incoming channel
+*/
 
 void task_init() {
     avl_initialize(&task_map, avl_ptrcmp, 0);
-    avl_initialize(&task_root, avl_ptrcmp, 0);
     avl_initialize(&named_tasks, (avl_comparator_t)strcmp, sheap_free);
-    avl_initialize(&local_channel, avl_ptrcmp, 0);
 }
 
 static uint64_t find_available_local() {
@@ -41,7 +43,7 @@ static uint64_t find_available_local() {
     return -1;
 }
 
-static uint64_t add_channel(uint64_t root_id, uint64_t *tls) {
+static uint64_t add_channel(uint64_t root_id, uint64_t *addr) {
     uint64_t local_addr = find_available_local();
     for(uint64_t i = 0; ; i ++) {
         uint64_t caddr = TASK_CHANNEL_START + i*CHANNEL_SIZE;
@@ -50,9 +52,7 @@ static uint64_t add_channel(uint64_t root_id, uint64_t *tls) {
         mman_anonymous(root_id, caddr, CHANNEL_SIZE);
         mman_mirror(mman_own_root(), local_addr, root_id, caddr, CHANNEL_SIZE);
 
-        //*target_addr = caddr;
-        tls[1] = caddr;
-        tls[2] = caddr + CHANNEL_SIZE/2;
+        *addr = caddr;
 
         break;
     }
@@ -72,39 +72,53 @@ static uint64_t add_storage(uint64_t root_id) {
     return 0;
 }
 
-static void task_setup(task_state_t *ts, uint64_t id, uint64_t root_id,
-    kcomm_t **sin, kcomm_t **sout) {
+static void task_setup(task_state_t *ts, task_info_t *info) {
 
     // point GS towards task-local storage
-    ts->gs_base = add_storage(root_id);
-    mman_mirror(mman_own_root(), TEMPORARY_MAP_ADDRESS, root_id, ts->gs_base,
-        0x1000);
+    ts->gs_base = add_storage(info->root_id);
+    mman_mirror(mman_own_root(), TEMPORARY_MAP_ADDRESS, info->root_id,
+        ts->gs_base, 0x1000);
 
     uint64_t *tls = (void *)TEMPORARY_MAP_ADDRESS;
-    tls[0] = id;
+    tls[0] = info->id;
+
+    // create scheduler channel
+    uint64_t addr;
+    uint64_t local_addr = add_channel(info->root_id, &addr);
+    //avl_insert(&local_schedchannel, (void *)id, (void *)local_addr);
+
+    tls[1] = addr;
+    tls[2] = addr + CHANNEL_SIZE/2;
+
+    info->sin = (kcomm_t *)local_addr;
+    info->sout = (kcomm_t *)(local_addr + CHANNEL_SIZE/2);
+
+    kcomm_init(info->sin, CHANNEL_SIZE/2);
+    kcomm_init(info->sout, CHANNEL_SIZE/2);
 
     // create incoming message channel
-    uint64_t local_addr = add_channel(root_id, tls);
-    avl_insert(&local_channel, (void *)id, (void *)local_addr);
+    local_addr = add_channel(info->root_id, &addr);
+    info->gin = (void *)local_addr;
 
-    *sin = (kcomm_t *)local_addr;
-    *sout = (kcomm_t *)(local_addr + CHANNEL_SIZE/2);
+    tls[3] = addr;
 
-    kcomm_init(*sin, CHANNEL_SIZE/2);
-    kcomm_init(*sout, CHANNEL_SIZE/2);
+    kcomm_init(info->gin, CHANNEL_SIZE);
 
+    // unmap thread-local storage
     mman_unmap(mman_own_root(), TEMPORARY_MAP_ADDRESS, 0x1000);
 }
 
-uint64_t sched_task_attach(task_state_t *ts, kcomm_t **sin, kcomm_t **sout) {
+uint64_t sched_task_attach(task_state_t *ts, task_info_t *info) {
     uint64_t id = gen_id();
-    avl_insert(&task_map, (void *)id, ts);
+    info->id = id;
+    avl_insert(&task_map, (void *)id, info);
     
     uint64_t root_id = mman_import_root(ts->cr3);
     mman_increment_root(root_id);
-    avl_insert(&task_root, (void *)id, (void *)root_id);
 
-    task_setup(ts, id, root_id, sin, sout);
+    info->root_id = root_id;
+
+    task_setup(ts, info);
 
     return id;
 }
@@ -120,38 +134,39 @@ uint64_t sched_named_task(const char *name) {
     return (uint64_t)avl_search(&named_tasks, (void *)name);
 }
 
-uint64_t sched_task_create(uint64_t root_id, kcomm_t **sin, kcomm_t **sout) {
+uint64_t sched_task_create(uint64_t root_id, task_info_t *info) {
     if(!mman_is_root(root_id)) return -1;
 
     task_state_t *ts = task_create();
 
     uint64_t id = gen_id();
-    avl_insert(&task_map, (void *)id, ts);
+    info->id = id;
+    avl_insert(&task_map, (void *)id, info);
 
     mman_increment_root(root_id);
     ts->cr3 = mman_get_root_cr3(root_id);
-    avl_insert(&task_root, (void *)id, (void *)root_id);
+    info->root_id = root_id;
 
-    task_setup(ts, id, root_id, sin, sout);
+    task_setup(ts, info);
 
     return id;
 }
 
-void sched_task_reap(uint64_t task_id) {
-    task_state_t *ts = avl_search(&task_map, (void *)task_id);
-    if(!ts) return;
+task_info_t *sched_task_reap(uint64_t task_id) {
+    task_info_t *info = avl_search(&task_map, (void *)task_id);
+    if(!info) return 0;
+
+    mman_decrement_root(info->state->cr3);
+    info->state->state = 0;
+    info->state->cr3 = 0;
+
+    if(info->gin) {
+        mman_unmap(mman_own_root(), (uint64_t)info->gin, CHANNEL_SIZE);
+    }
 
     avl_remove(&task_map, (void *)task_id);
-    avl_remove(&task_root, (void *)task_id);
 
-    mman_decrement_root(ts->cr3);
-    ts->state = 0;
-    ts->cr3 = 0;
-
-    void *local = avl_search(&local_channel, (void *)task_id);
-    if(local) {
-        mman_unmap(mman_own_root(), (uint64_t)local, CHANNEL_SIZE);
-    }
+    return info;
 }
 
 void sched_set_state(uint64_t task_id, uint64_t index, uint64_t value) {
@@ -162,6 +177,6 @@ void sched_set_state(uint64_t task_id, uint64_t index, uint64_t value) {
     }
 }
 
-uint64_t sched_get_root(uint64_t task_id) {
-    return (uint64_t)avl_search(&task_root, (void *)task_id);
+task_info_t *sched_get_info(uint64_t task_id) {
+    return avl_search(&task_map, (void *)task_id);
 }
