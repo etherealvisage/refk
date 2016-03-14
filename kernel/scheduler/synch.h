@@ -11,10 +11,13 @@ typedef struct synch_wait_t {
 typedef struct synchobj_t {
     uint64_t phy_addr;
     synch_wait_t *head;
-    uint64_t mapcount;
 } synchobj_t;
 
-synchobj_t *synch_find_from_phy(uint64_t phy);
+void synch_init();
+synchobj_t *synch_make(uint64_t phy);
+void synch_destroy(synchobj_t *object);
+
+synchobj_t *synch_from_phy(uint64_t phy);
 
 int synch_wait(synchobj_t *object, uint64_t value);
 void synch_wake(synchobj_t *object, uint64_t value, uint64_t count);

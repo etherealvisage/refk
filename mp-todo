@@ -1,0 +1,5 @@
+scheduler:
+- process() can be called by more than one task (int 0xfe handler per cpu + scheduler task)
+- task_setup() can be called by more than one task (TEMPORARY_MAP_ADDRESS is the problem)
+- find_available_local()
+- support priority-based futexes (threads can specify their priority, woken in priority order)

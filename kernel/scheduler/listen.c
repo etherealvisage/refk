@@ -54,15 +54,33 @@ static int process(queue_entry *q) {
             break;
         }
         case SCHED_WAIT: {
-            // TODO: find object
-            synchobj_t *obj = 0;
-            synch_wait(obj, in.wait.value);
+            // try getting object
+            uint64_t phy = mman_get_phy(q->info->root_id, in.wait.address);
+            synchobj_t *obj = synch_from_phy(phy);
+            // if not found, try creating
+            if(!obj) {
+                obj = synch_make(phy);
+            }
+            if(obj) {
+                // wait!
+                synch_wait(obj, in.wait.value);
+            }
+            else {
+                // failed to create, so failed to wait
+                status.result = -1;
+            }
             break;
         }
         case SCHED_WAKE: {
-            // TODO: find object
-            synchobj_t *obj = 0;
-            synch_wake(obj, in.wake.value, in.wake.count);
+            // try getting object
+            uint64_t phy = mman_get_phy(q->info->root_id, in.wait.address);
+            synchobj_t *obj = synch_from_phy(phy);
+            if(obj) {
+                synch_wake(obj, in.wake.value, in.wake.count);
+                status.result = 0;
+            }
+            // if not found, nothing to wake up -- but notify caller
+            else status.result = 1;
             break;
         }
         case SCHED_MAP_ANONYMOUS: {

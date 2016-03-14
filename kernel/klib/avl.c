@@ -14,6 +14,10 @@
     #define NULL ((void *)0)
 #endif
 
+/* recursive window-search helper */
+static void AVL_NAME(search_window_helper)(AVL_NAME(tree_t) *tree,
+    AVL_NAME(tree_node_t) *node, AVL_NAME(node_visitor_t) visitor, void *key1,
+    void *key2);
 /* recursive destruction helper */
 static void AVL_NAME(destroy_helper)(AVL_NAME(tree_t) *tree,
     AVL_NAME(tree_node_t) *node, AVL_NAME(node_visitor_t) visitor);
@@ -62,6 +66,32 @@ static void AVL_NAME(destroy_helper)(AVL_NAME(tree_t) *tree,
     AVL_NAME(destroy_helper)(tree, node->right, visitor);
 
     AVL_FREE(node);
+}
+
+static void AVL_NAME(search_window_helper)(AVL_NAME(tree_t) *tree,
+    AVL_NAME(tree_node_t) *node, AVL_NAME(node_visitor_t) visitor, void *key1,
+    void *key2) {
+
+    if(!node) return;
+
+    // is the root within the range?
+    int cmp1 = tree->comparator(key1, node->key);
+    int cmp2 = tree->comparator(key2, node->key);
+    if(cmp1 >= 0 && cmp2 <= 0) {
+        visitor(node->key, node->data);
+    }
+    else if(cmp2 > 0) {
+        AVL_NAME(search_window_helper)(tree, node->right, visitor, key1, key2);
+    }
+    else if(cmp1 < 0) {
+        AVL_NAME(search_window_helper)(tree, node->left, visitor, key1, key2);
+    }
+}
+
+void AVL_NAME(search_window)(AVL_NAME(tree_t) *tree,
+    AVL_NAME(node_visitor_t) visitor, void *key1, void *key2) {
+    AVL_NAME(tree_node_t) *node = tree->root;
+    AVL_NAME(search_window_helper)(tree, node, visitor, key1, key2);
 }
 
 void *AVL_NAME(search)(AVL_NAME(tree_t) *tree, void *key) {

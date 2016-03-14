@@ -41,6 +41,8 @@ void AVL_NAME(destroy)(AVL_NAME(tree_t) *tree,
     AVL_NAME(node_visitor_t) visitor);
 
 void *AVL_NAME(search)(AVL_NAME(tree_t) *tree, void *key);
+void AVL_NAME(search_window)(AVL_NAME(tree_t) *tree,
+    AVL_NAME(node_visitor_t) visitor, void *key1, void *key2);
 void *AVL_NAME(insert)(AVL_NAME(tree_t) *tree, void *key, void *data);
 void *AVL_NAME(remove)(AVL_NAME(tree_t) *tree, void *key);
 

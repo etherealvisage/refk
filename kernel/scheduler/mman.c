@@ -11,6 +11,7 @@ avl_tree_t root_refcount;
 avl_tree_t page_refcount;
 
 uint64_t this_root_id;
+static void (*pagefree_callback)(uint64_t address);
 
 static void increment_page(uint64_t page);
 static void decrement_page(uint64_t page);
@@ -250,6 +251,7 @@ static void decrement_page(uint64_t page) {
     }
     // case: time to release
     else {
+        if(pagefree_callback) pagefree_callback(page);
         avl_remove(&page_refcount, (void *)page);
         kmem_unuse(page);
     }
@@ -277,6 +279,10 @@ uint64_t mman_get_phy(uint64_t root, uint64_t address) {
     uint64_t entry = kmem_paging_addr(cr3, (address & ~0xfff), 3, &ok);
     if(!ok) return 0;
     return (phy_read64(entry) & ~KMEM_FLAG_MASK) | (address & 0xfff);
+}
+
+void mman_set_pagefree_callback(void (*callback)(uint64_t address)) {
+    pagefree_callback = callback;
 }
 
 void mman_increment_root(uint64_t root) {
