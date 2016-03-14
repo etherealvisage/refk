@@ -8,15 +8,31 @@
 #include "heap.h"
 #include "kcomm.h"
 #include "sequence.h"
+#include "global.h"
 
 #include "mman_private.h"
+
+uint64_t last_map_addr;
+
+static uint64_t rlib_get_memory_address(uint64_t size) {
+    if(last_map_addr == 0) last_map_addr = (uint64_t)rlib_map_start();
+
+    uint64_t addr = last_map_addr;
+    last_map_addr += size;
+    last_map_addr += 0x1000; // buffer
+    return addr;
+}
 
 void rlib_current_memory_space(rlib_memory_space_t *mspace) {
     // TODO
     mspace->root_id = 0;
 }
 
-void rlib_anonymous(uint64_t address, uint64_t size) {
+uint64_t rlib_anonymous(uint64_t address, uint64_t size) {
+    if(address == 0) {
+        address = rlib_get_memory_address(size);
+    }
+
     uint64_t own_id;
     kcomm_t *schedin, *schedout;
     __asm__ __volatile__("mov %%gs:0x00, %%rax" : "=a"(own_id));
@@ -39,6 +55,8 @@ void rlib_anonymous(uint64_t address, uint64_t size) {
         length = sizeof(out);
         __asm__ __volatile__("int $0xfe" : : "a"(own_id));
     }
+
+    return address;
 }
 
 void rlib_copy(uint64_t address, rlib_memory_space_t *origin,

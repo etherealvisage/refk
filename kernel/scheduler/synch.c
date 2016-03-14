@@ -36,6 +36,8 @@ synchobj_t *synch_make(uint64_t phy) {
     ret->phy_addr = phy;
     ret->head = 0;
 
+    avl_insert(&synch_objects, (void *)phy, ret);
+
     page_object_t *pobj = sheap_alloc(sizeof(*pobj));
     pobj->object = ret;
     pobj->next = avl_insert(&synch_pages, (void *)(phy & ~0xfff), pobj);
@@ -86,12 +88,19 @@ static void free_objects(uint64_t page_addr) {
 }
 
 synchobj_t *synch_from_phy(uint64_t phy) {
+    d_printf("Searching through synch_objects for %x\n", phy);
     synchobj_t *result = avl_search(&synch_objects, (void *)phy);
     return result;
 }
 
-int synch_wait(synchobj_t *object, uint64_t value) {
+int synch_wait(uint64_t task_id, synchobj_t *object, uint64_t value) {
     if(phy_read64(object->phy_addr) == value) {
+        synch_wait_t *wait = sheap_alloc(sizeof(*wait));
+        wait->task_id = task_id;
+        wait->next = object->head;
+        object->head = wait;
+
+        sched_get_info(task_id)->state->state |= TASK_STATE_BLOCKED;
         return 0;
     }
     else return 1;

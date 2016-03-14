@@ -272,7 +272,7 @@ uint64_t mman_import_root(uint64_t cr3) {
 }
 
 uint64_t mman_get_phy(uint64_t root, uint64_t address) {
-    uint64_t cr3 = (uint64_t)avl_search(&root_refcount, (void *)root);
+    uint64_t cr3 = (uint64_t)avl_search(&root_map, (void *)root);
     if(cr3 == 0) return -1;
 
     uint8_t ok = 0;

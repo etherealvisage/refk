@@ -14,6 +14,7 @@
 
 #include "rlib/global.h"
 #include "rlib/heap.h"
+#include "rlib/scheduler.h"
 
 char *clone_string(const char *orig, uint64_t length) {
     char *ret = malloc(length+1);
@@ -150,14 +151,52 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
     return AE_OK;
 }
 
+uint64_t task_synch;
+
+char waiter_stack[1024];
+
+void task_waiter(void *unused) {
+    task_synch = 0;
+    d_printf("task waiting...\n");
+    rlib_wait(&task_synch, 0);
+    d_printf("woken!\n");
+    while(1) {}
+}
+
+char waker_stack[1024];
+
+void task_waker() {
+    d_printf("waking...\n");
+    rlib_wake(&task_synch, 0, 1);
+    d_printf("yielding\n");
+    rlib_yield();
+    while(1) {}
+}
+
 void _start() {
-    rlib_setup(RLIB_DEFAULT_HEAP);
+    rlib_setup(RLIB_DEFAULT_HEAP, RLIB_DEFAULT_START);
 
     uint64_t own_id;
     kcomm_t *schedin, *schedout;
     __asm__ __volatile__("mov %%gs:0x00, %%rax" : "=a"(own_id));
     __asm__ __volatile__("mov %%gs:0x08, %%rax" : "=a"(schedin));
     __asm__ __volatile__("mov %%gs:0x10, %%rax" : "=a"(schedout));
+
+    rlib_task_t wait_task;
+    rlib_create_task(RLIB_NEW_MEMSPACE, &wait_task);
+
+    rlib_set_local_task(&wait_task, task_waiter, 0, 0x1000);
+    rlib_ready_task(&wait_task);
+
+    rlib_task_t wake_task;
+    rlib_create_task(RLIB_NEW_MEMSPACE, &wake_task);
+
+    rlib_set_local_task(&wake_task, task_waker, 0, 0x1000);
+    rlib_ready_task(&wake_task);
+
+    while(1) {
+        rlib_yield();
+    }
 
     ACPI_TABLE_DESC tables[32];
     ACPI_STATUS ret = AcpiInitializeTables(tables, 32, 0);

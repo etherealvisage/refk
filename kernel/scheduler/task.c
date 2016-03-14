@@ -112,6 +112,7 @@ uint64_t sched_task_attach(task_state_t *ts, task_info_t *info) {
     uint64_t root_id = mman_import_root(ts->cr3);
     mman_increment_root(root_id);
 
+    info->state = ts;
     info->root_id = root_id;
 
     task_setup(ts, info);
@@ -134,6 +135,8 @@ uint64_t sched_task_create(uint64_t root_id, task_info_t *info) {
     if(!mman_is_root(root_id)) return -1;
 
     task_state_t *ts = task_create();
+
+    info->state = ts;
 
     uint64_t id = gen_id();
     info->id = id;
@@ -166,9 +169,10 @@ task_info_t *sched_task_reap(uint64_t task_id) {
 }
 
 void sched_set_state(uint64_t task_id, uint64_t index, uint64_t value) {
-    task_state_t *ts = avl_search(&task_map, (void *)task_id);
-    if(ts && index < 32) {
-        uint64_t *indexed = (void *)ts;
+    task_info_t *info = avl_search(&task_map, (void *)task_id);
+
+    if(info && index < 32) {
+        uint64_t *indexed = (void *)info->state;
         indexed[index] = value;
     }
 }

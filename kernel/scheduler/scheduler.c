@@ -10,6 +10,7 @@
 #include "mman.h"
 #include "task.h"
 #include "listen.h"
+#include "synch.h"
 
 static task_state_t *choose_next(task_state_t *current) {
     int64_t init = current - TASK_MEM(0);
@@ -74,6 +75,7 @@ void _start(uint64_t bootproc_cr3, task_state_t *hw_task) {
     // init local components
     mman_init(bootproc_cr3);
     task_init();
+    synch_init();
 
     task_state_t *tick_ts = task_create();
     task_set_local(tick_ts, change_task, change_stack + 1024);

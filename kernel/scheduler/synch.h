@@ -19,7 +19,7 @@ void synch_destroy(synchobj_t *object);
 
 synchobj_t *synch_from_phy(uint64_t phy);
 
-int synch_wait(synchobj_t *object, uint64_t value);
+int synch_wait(uint64_t task_id, synchobj_t *object, uint64_t value);
 void synch_wake(synchobj_t *object, uint64_t value, uint64_t count);
 
 #endif
