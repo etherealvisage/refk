@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+#include "clib/mem.h"
+
 #include "klib/task.h"
 
 #include "kutil.h"
@@ -34,7 +36,7 @@ void kmain(uint64_t *mem) {
         // map as data initially
         kmem_map(kmem_boot(), TASK_BASE, transfer_page,
             KMEM_MAP_DEFAULT);
-        memcpy((void *)TASK_BASE, transfer_image, sizeof(transfer_image));
+        mem_copy((void *)TASK_BASE, transfer_image, sizeof(transfer_image));
         // remap as code
         kmem_map(kmem_boot(), TASK_BASE, transfer_page,
             KMEM_MAP_CODE);
@@ -48,7 +50,7 @@ void kmain(uint64_t *mem) {
             ptr += 0x1000;
         }
         // clear task memory
-        memset((void *)(TASK_BASE + 0x1000), 0, NUM_TASKS * 256);
+        mem_set((void *)(TASK_BASE + 0x1000), 0, NUM_TASKS * 256);
 
         // mark task #0 as valid, this will be used as temporary stack space
         // by the switcher

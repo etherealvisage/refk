@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "klib/kutil.h" // for memset etc.
+#include "clib/mem.h" // for memset etc.
 
 #define LACKS_STDLIB_H
 #define LACKS_UNISTD_H
@@ -14,6 +14,9 @@
 #define MORECORE rlib_expand_heap
 #define NO_MALLOC_STATS 1
 #define MALLOC_FAILURE_ACTION {}
+
+#define memset mem_set
+#define memcpy mem_copy
 
 void *rlib_expand_heap(int64_t by);
 /*

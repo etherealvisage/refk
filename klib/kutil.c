@@ -3,6 +3,8 @@
 
 #include "kutil.h"
 
+#include "clib/mem.h"
+
 #define PHY_MAP_BASE (uint8_t *)0xffffc00000000000ULL
 
 // first serial device
@@ -106,7 +108,7 @@ uint64_t phy_read64(uint64_t address) {
 }
 
 void phy_read(uint64_t address, void *buffer, uint64_t count) {
-    memcpy(buffer, PHY_MAP_BASE + address, count);
+    mem_copy(buffer, PHY_MAP_BASE + address, count);
 }
 
 void phy_write8(uint64_t address, uint8_t value) {
@@ -126,7 +128,7 @@ void phy_write64(uint64_t address, uint64_t value) {
 }
 
 void phy_write(uint64_t address, const void *buffer, uint64_t count) {
-    memcpy(PHY_MAP_BASE + address, buffer, count);
+    mem_copy(PHY_MAP_BASE + address, buffer, count);
 }
 
 uint64_t kmsr_read(uint64_t index) {
@@ -138,42 +140,6 @@ uint64_t kmsr_read(uint64_t index) {
 void kmsr_write(uint64_t index, uint64_t value) {
     __asm__ __volatile__("wrmsr" : : "c"(index), "a"(value & 0xffffffff),
         "d"(value >> 32));
-}
-
-void *memset(void *memory, uint8_t v, uint64_t count) {
-    uint8_t *m8 = memory;
-    while(count > 0) {
-        *m8 = v;
-        m8 ++;
-        count --;
-    }
-    return memory;
-}
-
-void *memcpy(void *dest, const void *src, uint64_t count) {
-    return memmove(dest, src, count);
-}
-
-void *memmove(void *dest, const void *src, uint64_t count) {
-    if(dest < src) {
-        const uint8_t *s8 = src;
-        uint8_t *d8 = dest;
-        while(count--) {
-            *d8 = *s8;
-            d8 ++, s8 ++;
-        }
-    }
-    else {
-        const uint8_t *s8 = (uint8_t *)src + count - 1;
-        uint8_t *d8 = (uint8_t *)dest + count - 1;
-
-        while(count--) {
-            *d8 = *s8;
-            d8 --, s8 --;
-        }
-    }
-
-    return dest;
 }
 
 uint64_t strlen(const char *s) {

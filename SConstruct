@@ -68,14 +68,17 @@ def builders(env):
     env.Append(BUILDERS = {"KernelProc": kernel_proc})
     env.Append(BUILDERS = {"Kernel": kernel})
 
+def gen_flags(env):
+    env.Append(CFLAGS = "-I .")
+
+
 def gcc(env):
-    env.Append(CFLAGS = "-std=c99 -O3")
+    env.Append(CFLAGS = "-std=c99")
     env.Append(CFLAGS = "-W -Wall -Wextra -nostdlib -nodefaultlibs -ffreestanding")
     env.Append(CFLAGS = "-mcmodel=large -m64 -mno-red-zone")
     env.Append(CFLAGS = "-Werror -Wno-error=unused-variable -Wno-error=unused-function")
     env.Append(CFLAGS = "-Wno-error=unused-parameter")
     env.Append(CFLAGS = "-mno-sse -mno-mmx")
-    env.Append(CFLAGS = "-I kernel/")
     env.Append(CFLAGS = "-fdiagnostics-color=always")
 
 def clang(env):
@@ -86,11 +89,11 @@ def clang(env):
     env.Append(CFLAGS = "-Werror -Wno-error=unused-variable -Wno-error=unused-function")
     env.Append(CFLAGS = "-Wno-error=unused-parameter")
     env.Append(CFLAGS = "-mno-sse -mno-mmx")
-    env.Append(CFLAGS = "-I kernel/")
 
 env = Environment(tools=["default", "nasm"])
 
 builders(env)
+gen_flags(env)
 if True:
     gcc(env)
 else:
@@ -98,8 +101,7 @@ else:
 
 # for non-debug versions
 #env.Append(CFLAGS = "-DNDEBUG")
-env.Append(CFLAGS = "-I .")
 
 Export("env")
 
-SConscript(dirs=["kernel", "rlib"])
+SConscript(dirs=["clib", "rlib", "klib", "kernel"])

@@ -1,8 +1,11 @@
+#include "clib/mem.h"
+
 #include "kmem.h"
 #include "kutil.h"
 #include "task.h"
 #include "desc.h"
-#include "status.h"
+
+#include "kernel/status.h"
 
 uint64_t temp_last;
 uint64_t *last_unused = &temp_last;
@@ -150,7 +153,7 @@ void kmem_memcpy(uint64_t root, uint64_t vaddr, void *data, uint64_t size) {
         uint64_t wsize = 0x1000 - pg_off;
         if(wsize > size) wsize = size;
 
-        memcpy((void *)(0xffffc00000000000ULL + phy_addr + pg_off),
+        mem_copy((void *)(0xffffc00000000000ULL + phy_addr + pg_off),
             data, wsize);
 
         data += wsize;
@@ -175,7 +178,7 @@ void kmem_memclr(uint64_t root, uint64_t vaddr, uint64_t size) {
         uint64_t wsize = 0x1000 - pg_off;
         if(wsize > size) wsize = size;
 
-        memset((void *)(0xffffc00000000000ULL + phy_addr + pg_off), 0, wsize);
+        mem_set((void *)(0xffffc00000000000ULL + phy_addr + pg_off), 0, wsize);
 
         vaddr += wsize;
         size -= wsize;

@@ -2,11 +2,12 @@
 
 #include "klib/kutil.h" //  debugging
 
+#include "clib/comm.h"
+
 #include "../kernel/scheduler/interface.h"
 
 #include "mman.h"
 #include "heap.h"
-#include "kcomm.h"
 #include "sequence.h"
 #include "global.h"
 
@@ -34,7 +35,7 @@ uint64_t rlib_anonymous(uint64_t address, uint64_t size) {
     }
 
     uint64_t own_id;
-    kcomm_t *schedin, *schedout;
+    comm_t *schedin, *schedout;
     __asm__ __volatile__("mov %%gs:0x00, %%rax" : "=a"(own_id));
     __asm__ __volatile__("mov %%gs:0x08, %%rax" : "=a"(schedin));
     __asm__ __volatile__("mov %%gs:0x10, %%rax" : "=a"(schedout));
@@ -45,13 +46,13 @@ uint64_t rlib_anonymous(uint64_t address, uint64_t size) {
     in.map_anonymous.root_id = 0; // current root
     in.map_anonymous.address = address;
     in.map_anonymous.size = size;
-    kcomm_put(schedin, &in, sizeof(in));
+    comm_put(schedin, &in, sizeof(in));
     __asm__ __volatile__("int $0xfe" : : "a"(own_id));
 
     sched_out_packet_t out;
     out.req_id = 0;
     uint64_t length = sizeof(out);
-    while(kcomm_get(schedout, &out, &length) || out.req_id != in.req_id) {
+    while(comm_get(schedout, &out, &length) || out.req_id != in.req_id) {
         length = sizeof(out);
         __asm__ __volatile__("int $0xfe" : : "a"(own_id));
     }
@@ -63,7 +64,7 @@ void rlib_copy(uint64_t address, rlib_memory_space_t *origin,
     uint64_t oaddress, uint64_t size) {
 
     uint64_t own_id;
-    kcomm_t *schedin, *schedout;
+    comm_t *schedin, *schedout;
     __asm__ __volatile__("mov %%gs:0x00, %%rax" : "=a"(own_id));
     __asm__ __volatile__("mov %%gs:0x08, %%rax" : "=a"(schedin));
     __asm__ __volatile__("mov %%gs:0x10, %%rax" : "=a"(schedout));
@@ -76,11 +77,11 @@ void rlib_copy(uint64_t address, rlib_memory_space_t *origin,
     in.map_mirror.oroot_id = origin->root_id;
     in.map_mirror.oaddress = oaddress;
     in.map_mirror.size = size;
-    kcomm_put(schedin, &in, sizeof(in));
+    comm_put(schedin, &in, sizeof(in));
 
     sched_out_packet_t out;
     uint64_t length;
-    while(kcomm_get(schedout, &out, &length) || out.req_id != in.req_id) {
+    while(comm_get(schedout, &out, &length) || out.req_id != in.req_id) {
         __asm__ __volatile__("int $0xfe" : : "a"(own_id));
     }
 }

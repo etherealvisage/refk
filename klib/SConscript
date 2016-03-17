@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+Import("env")
+
+klib_sources = Glob("*.c")
+env.Library("klib", klib_sources)

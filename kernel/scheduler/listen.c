@@ -1,7 +1,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "klib/kcomm.h"
+#include "clib/comm.h"
+
 #include "klib/avl.h"
 #include "klib/kutil.h"
 #include "klib/task.h"
@@ -32,7 +33,7 @@ static int process(queue_entry *q) {
     uint64_t in_size = sizeof(in);
     int ret = 0;
 
-    while(!kcomm_get(q->info->sin, &in, &in_size)) {
+    while(!comm_get(q->info->sin, &in, &in_size)) {
         // reset in_size
         in_size = sizeof(in);
 
@@ -48,7 +49,7 @@ static int process(queue_entry *q) {
             if(in.forward.length < length) length = in.forward.length;
             task_info_t *tinfo = sched_get_info(in.forward.task_id);
             if(tinfo) {
-                status.result = kcomm_put(tinfo->gin, in.forward.data, length);
+                status.result = comm_put(tinfo->gin, in.forward.data, length);
             }
             else status.result = -1;
             break;
@@ -165,7 +166,7 @@ static int process(queue_entry *q) {
         }
 
         if(status.req_id != 0) {
-            kcomm_put(q->info->sout, &status, sizeof(status));
+            comm_put(q->info->sout, &status, sizeof(status));
         }
     }
 

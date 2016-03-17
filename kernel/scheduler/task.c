@@ -1,7 +1,9 @@
+#include "clib/comm.h"
+#include "clib/mem.h"
+
 #include "klib/task.h"
 #include "klib/avl.h"
 #include "klib/kutil.h"
-#include "klib/kcomm.h"
 #include "klib/sheap.h"
 
 #include "id.h"
@@ -86,11 +88,11 @@ static void task_setup(task_state_t *ts, task_info_t *info) {
     tls[1] = addr;
     tls[2] = addr + CHANNEL_SIZE/2;
 
-    info->sin = (kcomm_t *)local_addr;
-    info->sout = (kcomm_t *)(local_addr + CHANNEL_SIZE/2);
+    info->sin = (comm_t *)local_addr;
+    info->sout = (comm_t *)(local_addr + CHANNEL_SIZE/2);
 
-    kcomm_init(info->sin, CHANNEL_SIZE/2);
-    kcomm_init(info->sout, CHANNEL_SIZE/2);
+    comm_init(info->sin, CHANNEL_SIZE/2);
+    comm_init(info->sout, CHANNEL_SIZE/2);
 
     // create incoming message channel
     local_addr = add_channel(info->root_id, &addr);
@@ -98,7 +100,7 @@ static void task_setup(task_state_t *ts, task_info_t *info) {
 
     tls[3] = addr;
 
-    kcomm_init(info->gin, CHANNEL_SIZE);
+    comm_init(info->gin, CHANNEL_SIZE);
 
     // unmap thread-local storage
     mman_unmap(mman_own_root(), TEMPORARY_MAP_ADDRESS, 0x1000);
@@ -123,7 +125,7 @@ uint64_t sched_task_attach(task_state_t *ts, task_info_t *info) {
 void sched_set_name(uint64_t task_id, const char *name) {
     uint64_t len = strlen(name);
     char *name_copy = sheap_alloc(len+1);
-    memcpy(name_copy, name, len+1);
+    mem_copy(name_copy, name, len+1);
     avl_insert(&named_tasks, name_copy, (void *)task_id);
 }
 

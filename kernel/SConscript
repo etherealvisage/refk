@@ -7,19 +7,16 @@ env.Image('images/transfer.h', 'transfer.bin')
 env.FlatBinary('intr.bin', 'images/intr.s')
 env.Image('images/intr.h', 'intr.bin')
 
-klib_sources = Glob("klib/*.c")
-env.Library("klib", klib_sources)
-
 scheduler_sources = Glob("scheduler/*.c")
 env.Library("scheduler", scheduler_sources)
-env.KernelProc("scheduler.elf", ["libscheduler.a", "libklib.a"])
+env.KernelProc("scheduler.elf", ["libscheduler.a", "../klib/libklib.a", "../clib/libclib.a"])
 env.Image("images/scheduler.h", "scheduler.elf")
 
 hw_sources = Glob("hw/*.c") + Glob("hw/acpica/*.c") + Glob("hw/drivers/*.c")
 env.Library("hw", hw_sources)
-env.KernelProc("hw.elf", ["libhw.a", "libklib.a", "../rlib/librlib.a"])
+env.KernelProc("hw.elf", ["libhw.a", "libklib.a", "../rlib/librlib.a", "../clib/libclib.a"])
 env.Image("images/hw.h", "hw.elf")
 
 env.Library("kernel", Glob("*.c"))
 env.Assemble("multiboot.o", "multiboot.s")
-env.Kernel("kernel.bin", ["multiboot.o", "libkernel.a", "libklib.a"])
+env.Kernel("kernel.bin", ["multiboot.o", "libkernel.a", "../klib/libklib.a", "../clib/libclib.a"])

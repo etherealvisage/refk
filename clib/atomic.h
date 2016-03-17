@@ -1,5 +1,5 @@
-#ifndef KLIB_ATOMIC_H
-#define KLIB_ATOMIC_H
+#ifndef CLIB_ATOMIC_H
+#define CLIB_ATOMIC_H
 
 #include <stdint.h>
 

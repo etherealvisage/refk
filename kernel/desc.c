@@ -1,3 +1,5 @@
+#include "clib/mem.h"
+
 #include "desc.h"
 #include "kmem.h"
 
@@ -92,7 +94,7 @@ void desc_init() {
             KMEM_MAP_DEFAULT);
     }
 
-    memcpy((void *)DESC_INT_CODE_ADDR, intr_image, sizeof(intr_image));
+    mem_copy((void *)DESC_INT_CODE_ADDR, intr_image, sizeof(intr_image));
     // protect intr pages
     for(uint64_t i = 0; i < sizeof(intr_image); i += 0x1000) {
         kmem_set_flags(kmem_boot(), DESC_INT_CODE_ADDR, KMEM_MAP_CODE);

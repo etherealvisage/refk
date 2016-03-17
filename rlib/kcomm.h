@@ -1,1 +1,0 @@
-../kernel/klib/kcomm.h

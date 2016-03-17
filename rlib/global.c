@@ -1,4 +1,4 @@
-#include "kcomm.h"
+#include "clib/comm.h"
 
 static void *g_heap_start, *g_map_start;
 

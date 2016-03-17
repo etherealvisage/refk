@@ -1,7 +1,6 @@
 #include "klib/kutil.h"
 #include "klib/task.h"
 #include "klib/desc.h"
-#include "klib/kcomm.h"
 #include "klib/lapic.h"
 #include "klib/kmem.h"
 #include "klib/sheap.h"

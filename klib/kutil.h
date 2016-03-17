@@ -40,11 +40,6 @@ void kmsr_write(uint64_t index, uint64_t value);
 // MSR defs
 #include "klib/msrs.h"
 
-// memory manipulation functions
-void *memset(void *memory, uint8_t v, uint64_t count);
-void *memcpy(void *dest, const void *src, uint64_t count);
-void *memmove(void *dest, const void *src, uint64_t count);
-
 // string handling functions
 uint64_t strlen(const char *s);
 int strcmp(const char *s1, const char *s2);
