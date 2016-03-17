@@ -20,7 +20,7 @@
 #include "rlib/scheduler.h"
 
 char *clone_string(const char *orig, uint64_t length) {
-    char *ret = malloc(length+1);
+    char *ret = heap_alloc(length+1);
     mem_copy(ret, orig, length);
     ret[length] = 0;
     return ret;
@@ -58,7 +58,7 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
 
     AcpiGetName(object, ACPI_FULL_PATHNAME, &buf);
     d_printf("    full name: %s\n", buf.Pointer);
-    free(buf.Pointer);
+    heap_free(buf.Pointer);
 
     ACPI_DEVICE_INFO *info;
 
@@ -70,14 +70,14 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
     if(info->Valid & ACPI_VALID_HID) {
         char *cloned = clone_string(info->HardwareId.String, info->HardwareId.Length);
         d_printf("    hardware ID: %s\n", cloned);
-        free(cloned);
+        heap_free(cloned);
     }
     if(info->Valid & ACPI_VALID_CID) {
         for(uint64_t i = 0; i < info->CompatibleIdList.Count; i ++) {
             char *cloned = clone_string(info->CompatibleIdList.Ids[i].String,
                 info->CompatibleIdList.Ids[i].Length);
             d_printf("    compatible hardware ID: %s\n", cloned);
-            free(cloned);
+            heap_free(cloned);
         }
     }
 
@@ -156,6 +156,8 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
 
 void _start() {
     rlib_setup(RLIB_DEFAULT_HEAP, RLIB_DEFAULT_START);
+    heap_init(HEAP_DEFAULT);
+    heap_set_sizer(heap_rlib_sizer, 0);
 
     uint64_t own_id;
     comm_t *schedin, *schedout;

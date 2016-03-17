@@ -1,10 +1,13 @@
+#include "clib/avl.h"
+#include "clib/heap.h"
+
 #include "klib/d.h"
 #include "klib/task.h"
 #include "klib/desc.h"
 #include "klib/lapic.h"
 #include "klib/kmem.h"
-#include "klib/sheap.h"
-#include "klib/avl.h"
+#include "klib/heap.h"
+
 
 #include "mman.h"
 #include "task.h"
@@ -69,7 +72,8 @@ static void process_queue(uint64_t __attribute__((unused)) vector,
 
 void _start(uint64_t bootproc_cr3, task_state_t *hw_task) {
     d_printf("scheduler!\n");
-    sheap_init();
+    heap_init(HEAP_DEFAULT);
+    heap_set_sizer(heap_klib_sizer, 0);
 
     // init local components
     mman_init(bootproc_cr3);

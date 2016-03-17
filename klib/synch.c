@@ -1,7 +1,6 @@
 #include <stdint.h>
 
 #include "synch.h"
-#include "sheap.h"
 
 
 void synch_initspin(spinlock_t *lock) {

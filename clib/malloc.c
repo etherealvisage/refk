@@ -11,14 +11,15 @@
 #define USE_DL_PREFIX
 #define HAVE_MMAP 0
 #define HAVE_MREMAP 0
-#define MORECORE rlib_expand_heap
+#define MORECORE heap_resize
 #define NO_MALLOC_STATS 1
 #define MALLOC_FAILURE_ACTION {}
 
 #define memset mem_set
 #define memcpy mem_copy
 
-void *rlib_expand_heap(int64_t by);
+#include "heap.h"
+
 /*
   This is a version (aka dlmalloc) of malloc/free/realloc written by
   Doug Lea and released to the public domain, as explained at

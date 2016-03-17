@@ -1,11 +1,11 @@
 #include "clib/comm.h"
 #include "clib/mem.h"
 #include "clib/str.h"
+#include "clib/avl.h"
+#include "clib/heap.h"
 
 #include "klib/task.h"
-#include "klib/avl.h"
 #include "klib/d.h"
-#include "klib/sheap.h"
 
 #include "id.h"
 #include "task.h"
@@ -26,7 +26,7 @@ avl_tree_t named_tasks; // map from strings to task IDs
 
 void task_init() {
     avl_initialize(&task_map, avl_ptrcmp, 0);
-    avl_initialize(&named_tasks, (avl_comparator_t)str_cmp, sheap_free);
+    avl_initialize(&named_tasks, (avl_comparator_t)str_cmp, heap_free);
 }
 
 static uint64_t find_available_local() {
@@ -125,7 +125,7 @@ uint64_t sched_task_attach(task_state_t *ts, task_info_t *info) {
 
 void sched_set_name(uint64_t task_id, const char *name) {
     uint64_t len = str_len(name);
-    char *name_copy = sheap_alloc(len+1);
+    char *name_copy = heap_alloc(len+1);
     mem_copy(name_copy, name, len+1);
     avl_insert(&named_tasks, name_copy, (void *)task_id);
 }

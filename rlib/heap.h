@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 
-void *malloc(uint64_t size);
-void free(void *ptr);
+#include "clib/heap.h"
+
+void *heap_rlib_sizer(void __attribute__((unused)) *context, int64_t by);
 
 #endif

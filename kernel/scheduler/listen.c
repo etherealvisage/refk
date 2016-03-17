@@ -1,13 +1,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "clib/avl.h"
 #include "clib/comm.h"
+#include "clib/heap.h"
 
-#include "klib/avl.h"
 #include "klib/d.h"
 #include "klib/task.h"
 #include "klib/synch.h"
-#include "klib/sheap.h"
 
 #include "listen.h"
 #include "interface.h"
@@ -129,7 +129,7 @@ static int process(queue_entry *q) {
         case SCHED_SPAWN: {
             uint64_t root_id = in.spawn.root_id;
             if(root_id == 0) root_id = q->info->root_id;
-            task_info_t *info = sheap_alloc(sizeof(*info));
+            task_info_t *info = heap_alloc(sizeof(*info));
             uint64_t task_id = sched_task_create(root_id, info);
 
             status.spawn.root_id = root_id;
@@ -156,7 +156,7 @@ static int process(queue_entry *q) {
             task_info_t *info = q->info;
             sched_task_reap(id);
             remove_from_queue(id);
-            sheap_free(info);
+            heap_free(info);
 
             break;
         }
@@ -187,7 +187,7 @@ void listen(task_state_t *hw_task) {
     queue_size = 0;
 
     {
-        task_info_t *info = sheap_alloc(sizeof(*info));
+        task_info_t *info = heap_alloc(sizeof(*info));
         // add hw task to queue
         queue[queue_size].task_id = sched_task_attach(hw_task, info);
         queue[queue_size].info = info;

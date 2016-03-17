@@ -10,12 +10,13 @@
 #ifndef AVL_H
 #define AVL_H
 
+#include "heap.h"
+
 /* modify this macro to change the prefix */
 #define AVL_NAME(name) avl_ ## name
 /* memory allocation macros, change as necessary */
-#define AVL_ALLOC(variable, type) variable = (type *)sheap_alloc(sizeof(type))
-#define AVL_FREE(variable) sheap_free(variable)
-#include "sheap.h"
+#define AVL_ALLOC(variable, type) variable = (type *)heap_alloc(sizeof(type))
+#define AVL_FREE(variable) heap_free(variable)
 
 typedef int (*AVL_NAME(comparator_t))(void *key1, void *key2);
 typedef void (*AVL_NAME(key_destructor_t))(void *key);

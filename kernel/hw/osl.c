@@ -84,11 +84,11 @@ ACPI_STATUS AcpiOsGetPhysicalAddress(void *LogicalAddress,
 }
 
 void *AcpiOsAllocate(ACPI_SIZE Size) {
-    return malloc(Size);
+    return heap_alloc(Size);
 }
 
 void AcpiOsFree(void *Memory) {
-    free(Memory);
+    heap_free(Memory);
 }
 
 ACPI_STATUS AcpiOsReadPciConfiguration(ACPI_PCI_ID *PciId, UINT32 Reg,
@@ -216,7 +216,7 @@ ACPI_STATUS AcpiOsWriteMemory(ACPI_PHYSICAL_ADDRESS Address, UINT64 Value,
 ACPI_STATUS AcpiOsCreateSemaphore(UINT32 MaxUnits, UINT32 InitialUnits,
     ACPI_SEMAPHORE *OutHandle) {
 
-    semaphore_t *semaphore = malloc(sizeof(spinlock_t));
+    semaphore_t *semaphore = heap_alloc(sizeof(spinlock_t));
 
     synch_initsemaphore(semaphore, InitialUnits);
 
@@ -225,7 +225,7 @@ ACPI_STATUS AcpiOsCreateSemaphore(UINT32 MaxUnits, UINT32 InitialUnits,
 }
 
 ACPI_STATUS AcpiOsDeleteSemaphore(ACPI_SEMAPHORE Handle) {
-    free(Handle);
+    heap_free(Handle);
     return 0;
 }
 
@@ -244,14 +244,14 @@ ACPI_STATUS AcpiOsSignalSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units) {
 }
 
 ACPI_STATUS AcpiOsCreateLock(ACPI_SPINLOCK *OutHandle) {
-    spinlock_t *lock = malloc(sizeof(spinlock_t));
+    spinlock_t *lock = heap_alloc(sizeof(spinlock_t));
     synch_initspin(lock);
     *OutHandle = lock;
     return !lock;
 }
 
 void AcpiOsDeleteLock(ACPI_SPINLOCK Handle) {
-    free(Handle);
+    heap_free(Handle);
 }
 
 ACPI_CPU_FLAGS AcpiOsAcquireLock(ACPI_SPINLOCK Handle) {
@@ -266,7 +266,7 @@ void AcpiOsReleaseLock(ACPI_SPINLOCK Handle, ACPI_CPU_FLAGS Flags) {
 ACPI_STATUS AcpiOsInstallInterruptHandler(UINT32 InterruptLevel,
     ACPI_OSD_HANDLER Handler, void *Context) {
 
-    char *stack = malloc(1024);
+    char *stack = heap_alloc(1024);
 
     task_state_t *ts = task_create();
     task_set_local(ts, Handler, stack + 1024);
