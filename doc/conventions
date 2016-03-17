@@ -1,0 +1,2 @@
+- rlib functions don't rely on dynamic memory allocation being available, instead taking structs to fill
+- 
