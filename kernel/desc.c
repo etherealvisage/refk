@@ -3,7 +3,7 @@
 #include "desc.h"
 #include "kmem.h"
 
-#include "kutil.h"
+#include "d.h"
 
 const uint8_t intr_image[] = {
 #include "images/intr.h"

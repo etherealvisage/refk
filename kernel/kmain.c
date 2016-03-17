@@ -5,7 +5,7 @@
 #include "klib/task.h"
 #include "klib/phy.h"
 
-#include "kutil.h"
+#include "d.h"
 #include "kmem.h"
 #include "desc.h"
 #include "status.h"

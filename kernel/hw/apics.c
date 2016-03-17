@@ -1,4 +1,4 @@
-#include "klib/kutil.h"
+#include "klib/d.h"
 #include "klib/lapic.h"
 #include "klib/io.h"
 

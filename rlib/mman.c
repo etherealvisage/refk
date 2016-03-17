@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "klib/kutil.h" //  debugging
+#include "klib/d.h" //  debugging
 
 #include "clib/comm.h"
 

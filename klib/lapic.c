@@ -1,5 +1,5 @@
-#include "klib/kutil.h"
 #include "klib/phy.h"
+#include "klib/msr.h"
 
 #include "lapic.h"
 
@@ -19,7 +19,7 @@ static uint32_t get_reg(uint64_t index);
 static void set_reg(uint64_t index, uint32_t value);
 
 void lapic_setup() {
-    lapic_base = kmsr_read(MSR_APIC_BASE) & ~0xfff;
+    lapic_base = msr_read(MSR_APIC_BASE) & ~0xfff;
 
     lapic_enable();
 }
@@ -30,9 +30,9 @@ uint8_t lapic_id() {
 
 void lapic_enable() {
     // set bit 11 in the APIC_BASE MSR to enable the APIC
-    uint32_t base = kmsr_read(MSR_APIC_BASE);
+    uint32_t base = msr_read(MSR_APIC_BASE);
     base |= 1<<11;
-    kmsr_write(MSR_APIC_BASE, base);
+    msr_write(MSR_APIC_BASE, base);
     
     // set the software-enable bit (8) in the spurious vector
     set_reg(LAPIC_REG_SPURIOUS,

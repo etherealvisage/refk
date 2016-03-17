@@ -1,8 +1,6 @@
-#include <stdarg.h>
-#include <stdint.h>
-
-#include "kutil.h"
 #include "klib/io.h"
+
+#include "d.h"
 
 // first serial device
 #define PORT_BASE 0x3f8

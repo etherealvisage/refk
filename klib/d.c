@@ -1,8 +1,4 @@
-#include <stdarg.h>
-#include <stdint.h>
-
-#include "kutil.h"
-
+#include "d.h"
 #include "io.h"
 
 // first serial device
@@ -14,7 +10,6 @@ void d_putchar(char c) {
 
     io_out8(PORT_BASE, c);
 }
-#endif
 
 void d_printf(const char *msg, ...) {
     va_list va;
@@ -58,40 +53,4 @@ void d_vprintf(const char *msg, va_list va) {
         }
     }
 }
-
-uint64_t kmsr_read(uint64_t index) {
-    uint32_t low, high;
-    __asm__ __volatile__("rdmsr" : "=a"(low), "=d"(high) : "c"(index));
-    return low | ((uint64_t)high << 32);
-}
-
-void kmsr_write(uint64_t index, uint64_t value) {
-    __asm__ __volatile__("wrmsr" : : "c"(index), "a"(value & 0xffffffff),
-        "d"(value >> 32));
-}
-
-uint64_t strlen(const char *s) {
-    uint64_t ret = 0;
-    while(*s) ret ++, s ++;
-    return ret;
-}
-
-int strcmp(const char *s1, const char *s2) {
-    while(1) {
-        if(*s1 == 0 && *s2 == 0) return 0;
-        if(*s1 < *s2) return -1;
-        if(*s1 > *s2) return 1;
-        s1 ++, s2 ++;
-    }
-}
-
-int strncmp(const char *s1, const char *s2, uint64_t maxlen) {
-    while(maxlen) {
-        if(*s1 == 0 && *s2 == 0) return 0;
-        if(*s1 < *s2) return -1;
-        if(*s1 > *s2) return 1;
-        s1 ++, s2 ++;
-        maxlen --;
-    }
-    return 0;
-}
+#endif

@@ -4,7 +4,7 @@
 #include "clib/comm.h"
 
 #include "klib/avl.h"
-#include "klib/kutil.h"
+#include "klib/d.h"
 #include "klib/task.h"
 #include "klib/synch.h"
 #include "klib/sheap.h"

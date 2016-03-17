@@ -1,9 +1,9 @@
 #include "clib/mem.h"
 
 #include "klib/phy.h"
+#include "klib/d.h"
 
 #include "kmem.h"
-#include "kutil.h"
 #include "task.h"
 #include "desc.h"
 

@@ -1,6 +1,6 @@
 #include "klib/avl.h"
 #include "klib/kmem.h"
-#include "klib/kutil.h"
+#include "klib/d.h"
 #include "klib/phy.h"
 
 #include "id.h"

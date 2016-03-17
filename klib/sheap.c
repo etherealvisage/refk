@@ -1,4 +1,3 @@
-#include "kutil.h"
 #include "sheap.h"
 
 static uint8_t allocator_memory[256];

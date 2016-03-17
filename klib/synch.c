@@ -2,7 +2,6 @@
 
 #include "synch.h"
 #include "sheap.h"
-#include "kutil.h" // debugging
 
 
 void synch_initspin(spinlock_t *lock) {

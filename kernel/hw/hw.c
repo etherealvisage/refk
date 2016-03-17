@@ -1,7 +1,8 @@
 #include "clib/comm.h"
 #include "clib/mem.h"
+#include "clib/str.h"
 
-#include "klib/kutil.h"
+#include "klib/d.h"
 #include "klib/task.h"
 
 #include "../scheduler/interface.h"
@@ -83,7 +84,7 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
     d_printf("    class code length: %x\n", info->ClassCode.Length);
 
     if(info->HardwareId.Length &&
-        !strncmp(info->HardwareId.String, "PNP0A08", info->HardwareId.Length)) {
+        !str_ncmp(info->HardwareId.String, "PNP0A08", info->HardwareId.Length)) {
 
         d_printf("        found PCI root!\n");
 
@@ -108,7 +109,7 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
         else d_printf("        Routing table get failed: %x\n", ret);
     }
     else if(info->HardwareId.Length &&
-        !strncmp(info->HardwareId.String, "PNP0C0F", info->HardwareId.Length)) {
+        !str_ncmp(info->HardwareId.String, "PNP0C0F", info->HardwareId.Length)) {
 
         /*ACPI_BUFFER retbuf;
         retbuf.Length = ACPI_ALLOCATE_BUFFER;

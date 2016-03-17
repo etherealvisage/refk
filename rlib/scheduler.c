@@ -1,4 +1,3 @@
-#include "klib/kutil.h" // debugging
 #include "klib/task.h"
 
 #include "kernel/scheduler/interface.h"

@@ -1,4 +1,4 @@
-#include "klib/kutil.h"
+#include "klib/d.h"
 
 #include "../acpica/acpi.h"
 

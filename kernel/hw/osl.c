@@ -3,7 +3,7 @@
 
 #include "clib/comm.h"
 
-#include "klib/kutil.h"
+#include "klib/d.h"
 #include "klib/synch.h"
 #include "klib/task.h"
 #include "klib/desc.h"

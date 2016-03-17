@@ -2,7 +2,6 @@
 
 #include "klib/task.h"
 #include "klib/kmem.h"
-#include "klib/kutil.h"
 
 #define DEFAULT_TASK_STACK_TOP 0x80000000
 
