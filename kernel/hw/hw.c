@@ -156,8 +156,6 @@ static ACPI_STATUS device_callback(ACPI_HANDLE object, UINT32 nesting,
 
 void _start() {
     rlib_setup(RLIB_DEFAULT_HEAP, RLIB_DEFAULT_START);
-    heap_init(HEAP_DEFAULT);
-    heap_set_sizer(heap_rlib_sizer, 0);
 
     uint64_t own_id;
     comm_t *schedin, *schedout;

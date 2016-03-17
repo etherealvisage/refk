@@ -6,7 +6,6 @@
 
 void rlib_setup(void *heap_start, void *map_start);
 
-void *rlib_heap_start();
 void *rlib_map_start();
 
 #endif
