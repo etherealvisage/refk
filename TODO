@@ -2,3 +2,4 @@ need to:
 - be able to get current memory space
     - from scheduler? GET_SPACE_FOR_TASK?
 - figure out how to do asynchronous actions
+- figure out centralized/safe way to establish comm. channels

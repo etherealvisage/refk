@@ -88,7 +88,6 @@ static void free_objects(uint64_t page_addr) {
 }
 
 synchobj_t *synch_from_phy(uint64_t phy) {
-    d_printf("Searching through synch_objects for %x\n", phy);
     synchobj_t *result = avl_search(&synch_objects, (void *)phy);
     return result;
 }

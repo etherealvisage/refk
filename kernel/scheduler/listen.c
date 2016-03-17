@@ -68,19 +68,14 @@ static int process(queue_entry *q) {
             else {
                 // failed to create, so failed to wait
                 status.result = -1;
-                d_printf("failed...\n");
             }
             break;
         }
         case SCHED_WAKE: {
             // try getting object
-            d_printf("handling SCHED_WAKE\n");
             uint64_t phy = mman_get_phy(q->info->root_id, in.wait.address);
-            d_printf("found phy = %x\n", phy);
             synchobj_t *obj = synch_from_phy(phy);
-            d_printf("found obj = %x\n", obj);
             if(obj) {
-                d_printf("Found, waking...\n");
                 synch_wake(obj, in.wake.value, in.wake.count);
                 status.result = 0;
             }

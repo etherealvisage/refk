@@ -1,9 +1,13 @@
 #include "kcomm.h"
 #include "kutil.h"
+#include "atomic.h"
 
 struct kcomm_t {
     uint64_t total_length;
     uint64_t data_begin, data_length;
+
+    uint64_t write_access, read_access;
+    uint64_t packet_count;
 
     uint64_t ring_begin, ring_end;
 };
@@ -12,6 +16,10 @@ void kcomm_init(kcomm_t *kc, uint64_t length) {
     kc->total_length = length;
     kc->data_begin = sizeof(kcomm_t);
     kc->data_length = length - kc->data_begin;
+
+    kc->read_access = 1;
+    kc->write_access = 1;
+    kc->packet_count = 0;
 
     kc->ring_begin = kc->ring_end = 0;
 }
