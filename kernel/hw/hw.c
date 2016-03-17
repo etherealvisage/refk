@@ -1,5 +1,7 @@
+#include "clib/comm.h"
+#include "clib/mem.h"
+
 #include "klib/kutil.h"
-#include "klib/kcomm.h"
 #include "klib/task.h"
 
 #include "../scheduler/interface.h"
@@ -18,7 +20,7 @@
 
 char *clone_string(const char *orig, uint64_t length) {
     char *ret = malloc(length+1);
-    memcpy(ret, orig, length);
+    mem_copy(ret, orig, length);
     ret[length] = 0;
     return ret;
 }
@@ -155,7 +157,7 @@ void _start() {
     rlib_setup(RLIB_DEFAULT_HEAP, RLIB_DEFAULT_START);
 
     uint64_t own_id;
-    kcomm_t *schedin, *schedout;
+    comm_t *schedin, *schedout;
     __asm__ __volatile__("mov %%gs:0x00, %%rax" : "=a"(own_id));
     __asm__ __volatile__("mov %%gs:0x08, %%rax" : "=a"(schedin));
     __asm__ __volatile__("mov %%gs:0x10, %%rax" : "=a"(schedout));

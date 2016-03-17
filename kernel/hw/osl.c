@@ -1,7 +1,8 @@
 // make this file quiet
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-#include "klib/kcomm.h"
+#include "clib/comm.h"
+
 #include "klib/kutil.h"
 #include "klib/synch.h"
 #include "klib/task.h"
@@ -9,7 +10,7 @@
 
 #include "rlib/heap.h"
 
-#include "../scheduler/interface.h"
+#include "kernel/scheduler/interface.h"
 
 #include "osl.h"
 #include "pci.h"
@@ -19,7 +20,7 @@
 uint64_t last_map = MAP_BEGIN;
 
 uint64_t this_id;
-kcomm_t *schedin, *schedout;
+comm_t *schedin, *schedout;
 
 ACPI_STATUS AcpiOsInitialize() {
     d_printf("initializing...\n");

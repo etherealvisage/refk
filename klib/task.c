@@ -1,5 +1,6 @@
+#include "clib/elf.h"
+
 #include "klib/task.h"
-#include "klib/elf.h"
 #include "klib/kmem.h"
 #include "klib/kutil.h"
 
