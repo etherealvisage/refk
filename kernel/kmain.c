@@ -3,6 +3,7 @@
 #include "clib/mem.h"
 
 #include "klib/task.h"
+#include "klib/phy.h"
 
 #include "kutil.h"
 #include "kmem.h"

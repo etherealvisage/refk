@@ -1,5 +1,6 @@
 #include "klib/kutil.h"
 #include "klib/lapic.h"
+#include "klib/phy.h"
 
 #include "ioapic.h"
 

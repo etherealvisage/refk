@@ -3,48 +3,16 @@
 
 #include "kutil.h"
 
-#include "clib/mem.h"
-
-#define PHY_MAP_BASE (uint8_t *)0xffffc00000000000ULL
+#include "io.h"
 
 // first serial device
 #define PORT_BASE 0x3f8
 
-void koutb(uint16_t port, uint8_t value) {
-    __asm__ __volatile__("out %%al, (%%dx)" : : "a"(value), "d"(port));
-}
-
-void koutw(uint16_t port, uint16_t value) {
-    __asm__ __volatile__("out %%ax, (%%dx)" : : "a"(value), "d"(port));
-}
-
-void koutd(uint16_t port, uint32_t value) {
-    __asm__ __volatile__("out %%eax, (%%dx)" : : "a"(value), "d"(port));
-}
-
-uint8_t kinb(uint16_t port) {
-    uint8_t ret = 0;
-    __asm__ __volatile__("in (%%dx), %%al" : "=a"(ret) : "d"(port));
-    return ret;
-}
-
-uint16_t kinw(uint16_t port) {
-    uint16_t ret = 0;
-    __asm__ __volatile__("in (%%dx), %%ax" : "=a"(ret) : "d"(port));
-    return ret;
-}
-
-uint32_t kind(uint16_t port) {
-    uint32_t ret = 0;
-    __asm__ __volatile__("in (%%dx), %%eax" : "=a"(ret) : "d"(port));
-    return ret;
-}
-
 #ifndef NDEBUG
 void d_putchar(char c) {
-    while((kinb(PORT_BASE + 5) & 0x20) == 0) ;
+    while((io_in8(PORT_BASE + 5) & 0x20) == 0) ;
 
-    koutb(PORT_BASE, c);
+    io_out8(PORT_BASE, c);
 }
 #endif
 
@@ -89,46 +57,6 @@ void d_vprintf(const char *msg, va_list va) {
             p ++;
         }
     }
-}
-
-uint8_t phy_read8(uint64_t address) {
-    return *(uint8_t *)(PHY_MAP_BASE + address);
-}
-
-uint16_t phy_read16(uint64_t address) {
-    return *(uint16_t *)(PHY_MAP_BASE + address);
-}
-
-uint32_t phy_read32(uint64_t address) {
-    return *(uint32_t *)(PHY_MAP_BASE + address);
-}
-
-uint64_t phy_read64(uint64_t address) {
-    return *(uint64_t *)(PHY_MAP_BASE + address);
-}
-
-void phy_read(uint64_t address, void *buffer, uint64_t count) {
-    mem_copy(buffer, PHY_MAP_BASE + address, count);
-}
-
-void phy_write8(uint64_t address, uint8_t value) {
-    *(uint8_t *)(PHY_MAP_BASE + address) = value;
-}
-
-void phy_write16(uint64_t address, uint16_t value) {
-    *(uint16_t *)(PHY_MAP_BASE + address) = value;
-}
-
-void phy_write32(uint64_t address, uint32_t value) {
-    *(uint32_t *)(PHY_MAP_BASE + address) = value;
-}
-
-void phy_write64(uint64_t address, uint64_t value) {
-    *(uint64_t *)(PHY_MAP_BASE + address) = value;
-}
-
-void phy_write(uint64_t address, const void *buffer, uint64_t count) {
-    mem_copy(PHY_MAP_BASE + address, buffer, count);
 }
 
 uint64_t kmsr_read(uint64_t index) {

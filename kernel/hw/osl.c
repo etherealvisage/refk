@@ -7,6 +7,7 @@
 #include "klib/synch.h"
 #include "klib/task.h"
 #include "klib/desc.h"
+#include "klib/io.h"
 
 #include "rlib/heap.h"
 
@@ -167,13 +168,13 @@ ACPI_STATUS AcpiOsReadPort(ACPI_IO_ADDRESS Address, UINT32 *Value,
     UINT32 Width) {
 
     if(Width == 8) {
-        *Value = kinb(Address);
+        *Value = io_in8(Address);
     }
     else if(Width == 16) {
-        *Value = kinw(Address);
+        *Value = io_in16(Address);
     }
     else if(Width == 32) {
-        *Value = kind(Address);
+        *Value = io_in32(Address);
     }
     else return 1;
 
@@ -184,13 +185,13 @@ ACPI_STATUS AcpiOsWritePort(ACPI_IO_ADDRESS Address, UINT32 Value,
     UINT32 Width) {
 
     if(Width == 8) {
-        koutb(Address, Value);
+        io_out8(Address, Value);
     }
     else if(Width == 16) {
-        koutw(Address, Value);
+        io_out16(Address, Value);
     }
     else if(Width == 32) {
-        koutd(Address, Value);
+        io_out32(Address, Value);
     }
     else return 1;
 
@@ -282,7 +283,7 @@ ACPI_STATUS AcpiOsRemoveInterruptHandler(UINT32 InterruptNumber,
     return 0;
 }
 
-void AcpiOsPrintf (const char *Format, ...) {
+void AcpiOsPrintf(const char *Format, ...) {
     va_list va;
     va_start(va, Format);
 
@@ -291,6 +292,6 @@ void AcpiOsPrintf (const char *Format, ...) {
     va_end(va);
 }
 
-void AcpiOsVprintf (const char *Format, va_list va) {
+void AcpiOsVprintf(const char *Format, va_list va) {
     d_vprintf(Format, va);
 }

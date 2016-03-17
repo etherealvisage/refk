@@ -1,4 +1,5 @@
 #include "klib/kutil.h"
+#include "klib/phy.h"
 
 #include "lapic.h"
 

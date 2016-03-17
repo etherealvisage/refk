@@ -2,6 +2,7 @@
 #include "klib/sheap.h"
 #include "klib/task.h"
 #include "klib/avl.h"
+#include "klib/phy.h"
 
 #include "synch.h"
 #include "task.h"

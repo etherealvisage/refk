@@ -1,5 +1,7 @@
 #include "clib/mem.h"
 
+#include "klib/phy.h"
+
 #include "kmem.h"
 #include "kutil.h"
 #include "task.h"

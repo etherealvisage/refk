@@ -1,5 +1,6 @@
 #include "klib/kutil.h"
 #include "klib/lapic.h"
+#include "klib/io.h"
 
 #include "acpica/acpi.h"
 
@@ -20,24 +21,24 @@ void apics_init() {
     if(madt_table->Flags & ACPI_MADT_PCAT_COMPAT) {
         /* Disable 8259 PIC emulation. */
         /* Set ICW1 */
-        koutb(0x20, 0x11);
-        koutb(0xa0, 0x11);
+        io_out8(0x20, 0x11);
+        io_out8(0xa0, 0x11);
 
         /* Set ICW2 (IRQ base offsets) */
-        koutb(0x21, 0xe0);
-        koutb(0xa1, 0xe8);
+        io_out8(0x21, 0xe0);
+        io_out8(0xa1, 0xe8);
 
         /* Set ICW3 */
-        koutb(0x21, 4);
-        koutb(0xa1, 2);
+        io_out8(0x21, 4);
+        io_out8(0xa1, 2);
 
         /* Set ICW4 */
-        koutb(0x21, 1);
-        koutb(0xa1, 1);
+        io_out8(0x21, 1);
+        io_out8(0xa1, 1);
 
         /* Set OCW1 (interrupt masks) */
-        koutb(0x21, 0xff);
-        koutb(0xa1, 0xff);
+        io_out8(0x21, 0xff);
+        io_out8(0xa1, 0xff);
     }
 
     uint8_t *begin = (void *)(madt_table + 1);
