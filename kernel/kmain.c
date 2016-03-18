@@ -14,10 +14,6 @@ const uint8_t transfer_image[] = {
 #include "images/transfer.h"
 };
 
-const uint8_t boot_image[] = {
-#include "images/boot.h"
-};
-
 const uint8_t scheduler_image[] = {
 #include "images/scheduler.h"
 };
