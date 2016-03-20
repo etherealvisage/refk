@@ -2,11 +2,11 @@
 
 #include "klib/d.h" //  debugging
 
-#include "clib/comm.h"
 
 #include "../kernel/scheduler/interface.h"
 
 #include "mman.h"
+#include "comm.h"
 #include "heap.h"
 #include "sequence.h"
 #include "global.h"
@@ -46,13 +46,13 @@ uint64_t rlib_anonymous(uint64_t address, uint64_t size) {
     in.map_anonymous.root_id = 0; // current root
     in.map_anonymous.address = address;
     in.map_anonymous.size = size;
-    comm_put(schedin, &in, sizeof(in));
+    comm_write(schedin, &in, sizeof(in));
     __asm__ __volatile__("int $0xfe" : : "a"(own_id));
 
     sched_out_packet_t out;
     out.req_id = 0;
     uint64_t length = sizeof(out);
-    while(comm_get(schedout, &out, &length) || out.req_id != in.req_id) {
+    while(comm_read(schedout, &out, &length, 0) || out.req_id != in.req_id) {
         length = sizeof(out);
         __asm__ __volatile__("int $0xfe" : : "a"(own_id));
     }
@@ -77,11 +77,11 @@ void rlib_copy(uint64_t address, rlib_memory_space_t *origin,
     in.map_mirror.oroot_id = origin->root_id;
     in.map_mirror.oaddress = oaddress;
     in.map_mirror.size = size;
-    comm_put(schedin, &in, sizeof(in));
+    comm_write(schedin, &in, sizeof(in));
 
     sched_out_packet_t out;
     uint64_t length;
-    while(comm_get(schedout, &out, &length) || out.req_id != in.req_id) {
+    while(comm_read(schedout, &out, &length, 0) || out.req_id != in.req_id) {
         __asm__ __volatile__("int $0xfe" : : "a"(own_id));
     }
 }

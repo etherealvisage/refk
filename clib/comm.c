@@ -1,103 +1,112 @@
+#include <stddef.h>
+
 #include "comm.h"
 #include "atomic.h"
 #include "mem.h"
 
-struct comm_t {
-    uint64_t total_length;
-    uint64_t data_begin, data_length;
+#include "comm_private.h"
 
-    uint64_t write_access, read_access;
-    uint64_t packet_count;
-
-    uint64_t ring_begin, ring_end;
-};
-
-void comm_init(comm_t *kc, uint64_t length) {
-    kc->total_length = length;
-    kc->data_begin = sizeof(comm_t);
-    kc->data_length = length - kc->data_begin;
-
-    kc->read_access = 1;
-    kc->write_access = 1;
-    kc->packet_count = 0;
-
-    kc->ring_begin = kc->ring_end = 0;
-}
-
-static uint64_t comm_remaining(comm_t *kc) {
-    if(kc->ring_begin <= kc->ring_end) {
-        uint64_t used = (kc->ring_end - kc->ring_begin);
-        return kc->data_length - used;
+int comm_init(comm_t *cc, uint64_t length, int type) {
+    cc->total_length = length;
+    cc->flags = 0;
+    cc->ring_begin = cc->ring_end = 0;
+    if(type == COMM_SIMPLE) {
+        cc->simple.packet_count = 0;
+        cc->flags = type;
+        cc->data_begin = offsetof(comm_t, simple.last);
+    }
+    else if(type == COMM_MULTI) {
+        cc->flags = type;
+        // NYI
+        while(1) {}
     }
     else {
-        return kc->ring_begin - kc->ring_end;
+        // invalid
+        return 1;
+    }
+
+    cc->data_length = length - cc->data_begin;
+
+    return 0;
+}
+
+static uint64_t comm_remaining(comm_t *cc) {
+    if(cc->ring_begin <= cc->ring_end) {
+        uint64_t used = (cc->ring_end - cc->ring_begin);
+        return cc->data_length - used;
+    }
+    else {
+        return cc->ring_begin - cc->ring_end;
     }
 }
 
-static void comm_put_data(comm_t *kc, void *data, uint64_t data_size) {
+static void comm_put_data(comm_t *cc, void *data, uint64_t data_size) {
     // are we wrapping?
-    if(kc->ring_end + data_size >= kc->data_length) {
-        uint64_t before_wrap = kc->data_length - kc->ring_end;
-        mem_copy((uint8_t *)(kc) + kc->data_begin + kc->ring_end, data,
+    if(cc->ring_end + data_size >= cc->data_length) {
+        uint64_t before_wrap = cc->data_length - cc->ring_end;
+        mem_copy((uint8_t *)(cc) + cc->data_begin + cc->ring_end, data,
             before_wrap);
         data = (uint8_t *)data + before_wrap;
         data_size -= before_wrap;
-        kc->ring_end = 0;
+        cc->ring_end = 0;
     }
 
-    mem_copy((uint8_t *)(kc) + kc->data_begin + kc->ring_end, data, data_size);
-    kc->ring_end += data_size;
+    mem_copy((uint8_t *)(cc) + cc->data_begin + cc->ring_end, data, data_size);
+    cc->ring_end += data_size;
 }
 
-static void comm_get_data(comm_t *kc, void *data, uint64_t data_size) {
+static void comm_get_data(comm_t *cc, void *data, uint64_t data_size) {
     // are we wrapping?
-    if(kc->ring_begin + data_size >= kc->data_length) {
-        uint64_t before_wrap = kc->data_length - kc->ring_begin;
-        mem_copy(data, (uint8_t *)(kc) + kc->data_begin + kc->ring_begin, before_wrap);
+    if(cc->ring_begin + data_size >= cc->data_length) {
+        uint64_t before_wrap = cc->data_length - cc->ring_begin;
+        mem_copy(data, (uint8_t *)(cc) + cc->data_begin + cc->ring_begin, before_wrap);
         data = (uint8_t *)data + before_wrap;
         data_size -= before_wrap;
-        kc->ring_begin = 0;
+        cc->ring_begin = 0;
     }
 
-    mem_copy(data, (uint8_t *)(kc) + kc->data_begin + kc->ring_begin, data_size);
-    kc->ring_begin += data_size;
+    mem_copy(data, (uint8_t *)(cc) + cc->data_begin + cc->ring_begin, data_size);
+    cc->ring_begin += data_size;
 }
 
-static void comm_skip_data(comm_t *kc, uint64_t data_size) {
+static void comm_skip_data(comm_t *cc, uint64_t data_size) {
     // are we wrapping?
-    if(kc->ring_begin + data_size >= kc->data_length) {
-        kc->ring_begin = 0;
+    if(cc->ring_begin + data_size >= cc->data_length) {
+        cc->ring_begin = 0;
     }
 
-    kc->ring_begin += data_size;
+    cc->ring_begin += data_size;
 }
 
-int comm_put(comm_t *kc, void *data, uint64_t data_size) {
+int comm_put(comm_t *cc, void *data, uint64_t data_size) {
     // is there enough space left?
     uint64_t req_size = data_size + 4;
-    if(comm_remaining(kc) < req_size) return 1;
+    if(comm_remaining(cc) < req_size) return 1;
 
     uint32_t dsize = data_size;
-    comm_put_data(kc, &dsize, sizeof(dsize));
-    comm_put_data(kc, data, data_size);
+    comm_put_data(cc, &dsize, sizeof(dsize));
+    comm_put_data(cc, data, data_size);
+
+    atomic_inc(&cc->simple.packet_count);
 
     return 0;
 }
 
-int comm_get(comm_t *kc, void *data, uint64_t *data_size) {
+int comm_peek(comm_t *cc, void *data, uint64_t *data_size) {
     // is there any data waiting?
-    if(kc->ring_begin == kc->ring_end) return 1;
-    
+    if(cc->simple.packet_count == 0) return 1;
+    atomic_dec(&cc->simple.packet_count);
+
     uint32_t dsize;
-    comm_get_data(kc, &dsize, sizeof(dsize));
+    comm_get_data(cc, &dsize, sizeof(dsize));
     if(*data_size < dsize) {
-        comm_skip_data(kc, dsize);
+        comm_skip_data(cc, dsize);
         *data_size = dsize;
+        return 1;
     }
     else {
-        comm_get_data(kc, data, dsize);
+        comm_get_data(cc, data, dsize);
+        *data_size = dsize;
+        return 0;
     }
-    *data_size = dsize;
-
-    return 0;
 }

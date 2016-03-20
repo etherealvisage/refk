@@ -2,13 +2,13 @@
 #include <stddef.h>
 
 #include "clib/avl.h"
-#include "clib/comm.h"
 #include "clib/heap.h"
 
 #include "klib/d.h"
 #include "klib/task.h"
 #include "klib/synch.h"
 
+#include "comm.h"
 #include "listen.h"
 #include "interface.h"
 #include "id.h"
@@ -33,7 +33,7 @@ static int process(queue_entry *q) {
     uint64_t in_size = sizeof(in);
     int ret = 0;
 
-    while(!comm_get(q->info->sin, &in, &in_size)) {
+    while(!comm_read(q->info->sin, &in, &in_size)) {
         // reset in_size
         in_size = sizeof(in);
 
@@ -49,7 +49,7 @@ static int process(queue_entry *q) {
             if(in.forward.length < length) length = in.forward.length;
             task_info_t *tinfo = sched_get_info(in.forward.task_id);
             if(tinfo) {
-                status.result = comm_put(tinfo->gin, in.forward.data, length);
+                status.result = comm_write(tinfo->gin, in.forward.data, length);
             }
             else status.result = -1;
             break;
@@ -166,7 +166,7 @@ static int process(queue_entry *q) {
         }
 
         if(status.req_id != 0) {
-            comm_put(q->info->sout, &status, sizeof(status));
+            comm_write(q->info->sout, &status, sizeof(status));
         }
     }
 

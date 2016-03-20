@@ -1,4 +1,3 @@
-#include "klib/d.h"
 #include "klib/lapic.h"
 #include "klib/phy.h"
 

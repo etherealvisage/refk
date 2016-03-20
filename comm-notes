@@ -1,0 +1,20 @@
+Cases:
+- Simple channel
+    - single reader task, single writer task
+    - only nonblocking
+    - writer:
+        - allocates ring space, writes packet, increments counter
+    - reader:
+        - checks counter, reads packet, releases ring space
+- Multi channel (TODO)
+    - multiple reader or writer tasks
+    - supports blocking with sleeping
+    - writer:
+        - waits for ring space
+        - allocates ring space
+        - copies in packet
+        - marks packet as ready
+        - increments count semaphore
+    - reader:
+        - decrements count semaphore
+        - checks head packet

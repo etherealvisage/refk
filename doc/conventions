@@ -1,2 +1,4 @@
 - rlib functions don't rely on dynamic memory allocation being available, instead taking structs to fill
-- 
+- return values:
+    - for functions that return a pointer, 0 is failure, < 0 is failure with info
+    - for functions that return a status code, 0 is success, > 0 is error

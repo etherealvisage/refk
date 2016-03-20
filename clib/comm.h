@@ -1,14 +1,14 @@
 #ifndef CLIB_COMM_H
-#define CLIB_KCOMM_H
+#define CLIB_COMM_H
 
 #include <stdint.h>
+
+#define COMM_SIMPLE         0
+#define COMM_MULTI          1
 
 struct comm_t;
 typedef struct comm_t comm_t;
 
-void comm_init(comm_t *cc, uint64_t length);
-
-int comm_put(comm_t *cc, void *data, uint64_t data_size);
-int comm_get(comm_t *cc, void *data, uint64_t *data_size);
+int comm_init(comm_t *cc, uint64_t length, int type);
 
 #endif

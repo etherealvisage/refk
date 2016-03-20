@@ -57,5 +57,12 @@ uint64_t atomic_swap(uint64_t *address, uint64_t value) {
 }
 
 int atomic_swapcompare(uint64_t *address, uint64_t expected, uint64_t value) {
-    return 1;
+    uint64_t successful;
+    __asm__ __volatile__(
+        "lock cmpxchg %%rcx, 0(%%rbx) \n"
+        "xor %%rax, %%rax \n"
+        "cmovz %%rax, %%rdx"
+        : "=b"(value), "=d"(successful)
+        : "a"(expected), "b"(address), "c"(value), "d"(1));
+    return successful;
 }
