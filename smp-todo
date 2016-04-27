@@ -1,0 +1,6 @@
+- MT-safe scheduler
+    - marked with TODOs for now
+- LAPIC timer synchronization
+    - use PIT for calibration
+- AP boot code
+    - reuse GDT, IDT

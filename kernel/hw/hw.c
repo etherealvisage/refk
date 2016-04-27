@@ -195,11 +195,11 @@ void _start() {
     pci_probe_all();
     d_printf("PCI devices probed\n");
 
-    {
+    /*{
         void *r;
         uint64_t ret = AcpiGetDevices(0, &device_callback, 0, &r);
         d_printf("get_devices ret: %x\n", ret);
-    }
+    }*/
 
     d_printf("initialized\n");
     while(1) {}

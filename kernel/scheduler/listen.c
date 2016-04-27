@@ -28,6 +28,7 @@ static void remove_from_queue(uint64_t id);
 
 // task data structures
 static int process(queue_entry *q) {
+    // TODO: make MT-safe
     sched_in_packet_t in;
     sched_out_packet_t status;
     uint64_t in_size = sizeof(in);

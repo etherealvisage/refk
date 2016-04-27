@@ -7,6 +7,8 @@
 #include "id.h"
 #include "mman.h"
 
+// TODO: make MT-safe (suggest global lock on mman operations for now)
+
 // memory management data structures
 avl_tree_t root_map;
 avl_tree_t root_refcount;

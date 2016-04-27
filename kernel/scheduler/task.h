@@ -7,6 +7,7 @@
 
 typedef struct synchobj_t synchobj_t;
 
+// TODO: add write-lock
 typedef struct task_info_t {
     uint64_t id;
     task_state_t *state;

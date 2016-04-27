@@ -15,6 +15,7 @@
 #include "synch.h"
 
 static task_state_t *choose_next(task_state_t *current) {
+    // TODO: make MT-safe
     int64_t init = current - TASK_MEM(0);
 
     task_state_t *nts;
