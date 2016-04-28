@@ -1,3 +1,4 @@
+#include "klib/d.h" // debugging
 #include "klib/phy.h"
 #include "klib/msr.h"
 
@@ -7,6 +8,8 @@
 #define LAPIC_REG_EOI 0xb
 #define LAPIC_REG_SPURIOUS 0xf
 #define LAPIC_REG_ISR 0x10
+#define LAPIC_REG_ICR_LO 0x30
+#define LAPIC_REG_ICR_HI 0x31
 #define LAPIC_REG_TIMER 0x32
 #define LAPIC_REG_TIMER_ICR 0x38
 #define LAPIC_REG_TIMER_DIVIDE 0x3e
@@ -45,6 +48,15 @@ static uint32_t get_reg(uint64_t index) {
 
 static void set_reg(uint64_t index, uint32_t value) {
     phy_write32(lapic_base + index * 0x10, value);
+}
+
+void lapic_send_ipi(uint8_t to, uint8_t type, uint8_t vector) {
+    // delay until the last IPI is sent
+    while(get_reg(LAPIC_REG_ICR_LO) & (1<<12)) ;
+
+    set_reg(LAPIC_REG_ICR_HI, ((uint64_t)to) << 24);
+    set_reg(LAPIC_REG_ICR_LO, vector | (((uint64_t)type) << 8));
+    // sent!
 }
 
 void lapic_send_eoi() {

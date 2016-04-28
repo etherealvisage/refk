@@ -50,13 +50,6 @@ void apics_init() {
             ACPI_MADT_IO_APIC *ioapic = (void *)sheader;
             ioapic_init(ioapic->Address, ioapic->GlobalIrqBase);
         }
-        else if(sheader->Type == ACPI_MADT_TYPE_LOCAL_APIC) {
-            ACPI_MADT_LOCAL_APIC *lapic = (void *)sheader;
-            // is this processor core enabled?
-            if((lapic->LapicFlags & 1) && lapic->Id != lapic_id()) {
-                d_printf("Found AP!\n");
-            }
-        }
         /*else if(sheader->Type == ACPI_MADT_TYPE_INTERRUPT_OVERRIDE) {
             ACPI_MADT_INTERRUPT_OVERRIDE *iover = (void *)sheader;
             //d_printf("Found interrupt override! ISA interrupt %x should be %x\n", iover->SourceIrq, iover->GlobalIrq);

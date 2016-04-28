@@ -2,10 +2,12 @@
 
 Import("env")
 
-env.FlatBinary('transfer.bin', 'images/transfer.s')
-env.Image('images/transfer.h', 'transfer.bin')
-env.FlatBinary('intr.bin', 'images/intr.s')
-env.Image('images/intr.h', 'intr.bin')
+env.FlatBinary('images/transfer.bin', 'images/transfer.s')
+env.Image('images/transfer.h', 'images/transfer.bin')
+env.FlatBinary('images/intr.bin', 'images/intr.s')
+env.Image('images/intr.h', 'images/intr.bin')
+env.FlatBinary('images/smpboot.bin', 'images/smpboot.s')
+env.Image('images/smpboot.h', 'images/smpboot.bin')
 
 scheduler_sources = Glob("scheduler/*.c")
 env.Library("scheduler", scheduler_sources)

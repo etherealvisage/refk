@@ -1,5 +1,6 @@
 Global memory map:
 
+0x             4 0000 (size 4KB):       SMP boot location
 0x            10 0000 (size XKB):       initial low-memory location
 0xffff 8000 0000 0000 (size XKB):       task communication channels
 0xffff 9000 0000 0000 (size 4KB):       status page

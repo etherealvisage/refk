@@ -4,9 +4,9 @@
 #include <stdarg.h>
 
 #ifdef NDEBUG
-#define d_putchar(c)
-#define d_printf(c, ...)
-#define d_vprintf(c, va) 
+#define d_putchar(c) do { } while(0)
+#define d_printf(c, ...) do { } while(0)
+#define d_vprintf(c, va) do { } while(0)
 #else
 void d_putchar(char c);
 void d_printf(const char *format, ...);

@@ -62,7 +62,7 @@ void hpet_init() {
 
     hpet_write(HPET_CCR(0), ccr);
 
-    //const uint64_t period = 100 * 1000000;
+    // timer: 1 ms
     const uint64_t period = 1000000 * 1000000ul;
     uint64_t ticks = period / between_ticks;
 

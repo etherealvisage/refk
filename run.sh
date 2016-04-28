@@ -4,10 +4,12 @@ if [[ $1 == "debug" ]]; then
     EXTRA_PARAMS="-serial file:serial -d int,cpu_reset"
 fi
 
+EXTRA_PARAMS="$EXTRA_PARAMS -monitor tcp:localhost:4444,server"
+
 # environment variables
 export TERM=xterm
 
-MB_PARAMS="-m 64 -M q35"
+MB_PARAMS="-m 64 -M q35 -smp 2"
 KERNEL_PARAMS="-kernel kernel/kernel.bin"
 NIC_PARAMS="-net nic,model=rtl8139"
 NET_PARAMS="-net user"

@@ -15,6 +15,7 @@
 #include "ioapic.h"
 #include "apics.h"
 #include "hpet.h"
+#include "smpboot.h"
 
 #include "rlib/global.h"
 #include "rlib/heap.h"
@@ -174,6 +175,7 @@ void _start() {
 
     AcpiInitializeSubsystem();
     AcpiLoadTables();
+    #if 0
     AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION);
     AcpiInitializeObjects(ACPI_FULL_INITIALIZATION);
 
@@ -189,34 +191,22 @@ void _start() {
         if(ret != AE_OK) d_printf("Failed to invoke \\_PIC: %x\n", ret);
         else d_printf("Successfully told ACPI to use I/O APIC mode!\n");
     }
+    #endif
 
     // initialize BSP local APIC and I/O APICs
     apics_init();
 
-    hpet_init();
-
-    //pci_probe_all();
-    //d_printf("PCI devices probed\n");
-
-    /*{
-        void *r;
-        uint64_t ret = AcpiGetDevices(0, &device_callback, 0, &r);
-        d_printf("get_devices ret: %x\n", ret);
-    }*/
-
-    d_printf("initialized\n");
-
     volatile uint64_t *counter = (void *)0xffff900000000000;
     volatile uint64_t *increment = (void *)0xffff900000000c00;
     *counter = 0;
-    *increment = 1;
+    *increment = 1000000; // 1ms per tick = 1e6 ns per tick
 
+    hpet_init();
+
+    // begin timer
     __asm__("sti");
 
-    for(int i = 0; i < 1000000; i ++) {
-        d_printf("counter: %x\n", *counter);
-        for(int i = 0; i < 10000000; i ++) {}
-    }
+    smpboot_init();
 
     while(1) {}
 }
