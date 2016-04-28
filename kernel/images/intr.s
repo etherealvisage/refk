@@ -314,6 +314,24 @@ int_isr_%1:
 	iretq
 %endmacro
 
+%macro timer_isr 1
+int_isr_%1:
+	push	r9
+	push	rax
+	mov	r9, 0xffff900000000000 ; status page base
+	; grab increment
+	mov	eax, dword [r9 + 0xc00]
+	; add increment
+	add	dword [r9 + 0x000], eax
+	pop	rax
+	mov	r9, 0xffffc00000000000 + 0xfee00000 ; phy map base + apic base
+	; signal end-of-interrupt
+	mov	dword [r9 + 0xb0], 0
+	pop	r9
+
+	iretq
+%endmacro
+
 basic_isr 0
 basic_isr 1
 basic_isr 2
@@ -410,7 +428,8 @@ basic_isr 92
 basic_isr 93
 basic_isr 94
 basic_isr 95
-basic_isr 96
+;basic_isr 96
+timer_isr 96
 basic_isr 97
 basic_isr 98
 basic_isr 99

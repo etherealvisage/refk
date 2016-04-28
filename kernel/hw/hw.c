@@ -14,6 +14,7 @@
 #include "pci.h"
 #include "ioapic.h"
 #include "apics.h"
+#include "hpet.h"
 
 #include "rlib/global.h"
 #include "rlib/heap.h"
@@ -192,8 +193,10 @@ void _start() {
     // initialize BSP local APIC and I/O APICs
     apics_init();
 
-    pci_probe_all();
-    d_printf("PCI devices probed\n");
+    hpet_init();
+
+    //pci_probe_all();
+    //d_printf("PCI devices probed\n");
 
     /*{
         void *r;
@@ -202,5 +205,18 @@ void _start() {
     }*/
 
     d_printf("initialized\n");
+
+    volatile uint64_t *counter = (void *)0xffff900000000000;
+    volatile uint64_t *increment = (void *)0xffff900000000c00;
+    *counter = 0;
+    *increment = 1;
+
+    __asm__("sti");
+
+    for(int i = 0; i < 1000000; i ++) {
+        d_printf("counter: %x\n", *counter);
+        for(int i = 0; i < 10000000; i ++) {}
+    }
+
     while(1) {}
 }

@@ -22,3 +22,4 @@ Task-local storage page:
 
 Status page: (read-only)
 0x000  (size 8 bytes):  monotonically-increasing clock, in ns
+0xc00  (size 8 bytes):  ns per HPET tick

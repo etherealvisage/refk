@@ -61,7 +61,7 @@ void kmain(uint64_t *mem) {
     }
 
     // create status page
-    kmem_map(kmem_current(), STATUS_BASE, kmem_getpage(), KMEM_MAP_RO_DATA);
+    kmem_map(kmem_current(), STATUS_BASE, kmem_getpage(), KMEM_MAP_DATA);
 
     void (*transfer)(void *, void *) = (void *)0xffffffffffe00000;
 
