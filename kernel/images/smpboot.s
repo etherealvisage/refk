@@ -49,9 +49,12 @@ pmode:
 	mov	eax, [paging_struct]
 	mov	cr3, eax
 
-	; enable paging + WP
+	; enable paging, WP
 	mov	eax, cr0
 	or	eax, (1<<31)
+	mov	cr0, eax
+
+	mov	eax, cr0
 	or	eax, (1<<16)
 	mov	cr0, eax
 

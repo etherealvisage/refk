@@ -2,6 +2,8 @@
 #include "klib/lapic.h"
 #include "klib/phy.h"
 #include "klib/kmem.h"
+#include "klib/task.h"
+#include "klib/msr.h"
 
 #include "acpica/acpi.h"
 
@@ -9,6 +11,10 @@
 
 const char smpboot_image[] = {
 #include "../images/smpboot.h"
+};
+
+const char apsched_image[] = {
+#include "../images/apsched.h"
 };
 
 static void init_ap(uint8_t id);
@@ -76,5 +82,19 @@ static void init_ap(uint8_t id) {
 
 static void ap_entry(uint64_t id) {
     ap_semaphore = 1;
+
+    msr_write(MSR_TSC_AUX, id);
+
+    // enable syscall/sysret
+    msr_write(MSR_EFER, msr_read(MSR_EFER) | 1);
+
+    // TODO: load IDT
+    // TODO: set up syscall MSRs
+
+    msr_write(MSR_LSTAR, 0xffffa00000000000);
+    msr_write(MSR_STAR, ((0x18UL + 3) << 48) | (0x08UL << 32));
+
+    __asm__ __volatile__("syscall");
+
     while(1) {}
 }

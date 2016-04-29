@@ -4,7 +4,9 @@
 isr_task_region		equ 0xffffffffffc02000
 isr_save_region		equ 0xffffffffffc02e00
 transfer_control	equ 0xffffffffffe00000
-task_state_region	equ 0xffffffffffe01000
+task_percpu_region	equ 0xffffffffffe01000
+task_percpu_size_log	equ 6
+task_percpu_size	equ (1 << task_percpu_size_log)
 
 isr_table:
 	dq int_isr_0
@@ -301,7 +303,20 @@ int_isr_%1:
 
 	mov	qword [rsi + 5*8], %1 ; rdi
 	mov	qword [rsi + 4*8], rbx ; rsi
-	mov	rdi, qword [task_state_region]
+
+	; get task percpu storage region
+	push	rax
+	push	rdx
+	push	rcx
+	rdtscp
+	shl	ecx, task_percpu_size_log
+	lea	rax, [task_percpu_region + ecx]
+	pop	rcx
+	pop	rdx
+	mov	rdi, qword [rax]
+	pop	rax
+
+	;mov	rdi, qword [task_percpu_region]
 	mov	qword [rsi + 3*8], rdi ; rdx
 
 	call	transfer_control

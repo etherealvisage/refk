@@ -125,6 +125,10 @@ uint64_t kmem_create_root() {
     nentry = kmem_paging_addr_create(ret, STATUS_BASE, 2);
     bentry = kmem_paging_addr_create(kmem_current(), STATUS_BASE, 2);
     phy_write64(nentry, phy_read64(bentry));
+    // copy syscall page level 2 structure (2MB total)
+    nentry = kmem_paging_addr_create(ret, 0xffffa00000000000, 2);
+    bentry = kmem_paging_addr_create(kmem_current(), 0xffffa00000000000, 2);
+    phy_write64(nentry, phy_read64(bentry));
 
     return ret;
 }

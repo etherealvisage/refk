@@ -34,6 +34,8 @@ void kmem_init(uint64_t *regions) {
             if(p >= kernel_start && p <= kernel_end) continue;
             // don't use first 2MB
             if(p <= 0x20000) continue;
+            // don't use anything past first 2GB (DEBUGGING)
+            if(p >= 0x80000000) continue;
 
             kmem_unuse(p);
         }

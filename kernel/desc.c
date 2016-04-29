@@ -73,6 +73,7 @@ void desc_init() {
     gdt_set_code(1, 0);
     gdt_set_data(2);
     gdt_set_code(3, 3);
+    gdt_set_data(4);
 
     /* load new GDT */
     __asm__ __volatile__(

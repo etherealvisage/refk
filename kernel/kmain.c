@@ -4,6 +4,7 @@
 
 #include "klib/task.h"
 #include "klib/phy.h"
+#include "klib/msr.h"
 
 #include "d.h"
 #include "kmem.h"
@@ -22,10 +23,22 @@ const uint8_t hw_image[] = {
 #include "images/hw.h"
 };
 
+const uint8_t syscall_image[] = {
+#include "images/syscall.h"
+};
+
 void kmain(uint64_t *mem) {
     d_init(); // set up the serial port
     d_printf("Rebooting...\n");
     kmem_init(mem); // initialize bootstrap memory manager
+
+    // syscall initialization
+    {
+        uint64_t syscall_page = kmem_getpage();
+        kmem_map(kmem_boot(), 0xffffa00000000000, syscall_page, KMEM_MAP_DEFAULT);
+        mem_copy((void *)0xffffa00000000000, syscall_image, sizeof(syscall_image));
+        kmem_map(kmem_boot(), 0xffffa00000000000, syscall_page, KMEM_MAP_CODE);
+    }
 
     // task initialization
     {
@@ -38,8 +51,14 @@ void kmain(uint64_t *mem) {
         kmem_map(kmem_boot(), TASK_BASE, transfer_page,
             KMEM_MAP_CODE);
 
+        /* map percpu task state */
+        uint64_t page = kmem_getpage();
+        kmem_map(kmem_boot(), TASK_BASE + 0x1000, page, KMEM_MAP_DEFAULT);
+        // clear percpu task state
+        mem_set((void *)(TASK_BASE + 0x1000), 0, 0x1000);
+
         /* map task memory */
-        uint64_t ptr = TASK_BASE + 0x1000;
+        uint64_t ptr = TASK_BASE + 0x10000;
         for(int i = 0; i < NUM_TASKS; i += 16) {
             uint64_t page = kmem_getpage();
             kmem_map(kmem_boot(), ptr, page, KMEM_MAP_DEFAULT);
@@ -47,7 +66,7 @@ void kmain(uint64_t *mem) {
             ptr += 0x1000;
         }
         // clear task memory
-        mem_set((void *)(TASK_BASE + 0x1000), 0, NUM_TASKS * 256);
+        mem_set((void *)(TASK_BASE + 0x10000), 0, NUM_TASKS * 256);
 
         // mark task #0 as valid, this will be used as temporary stack space
         // by the switcher
@@ -83,6 +102,9 @@ void kmain(uint64_t *mem) {
 
     // pass in the task state for the hw thread into the scheduler
     TASK_MEM(1)->rsi = (uint64_t)TASK_MEM(2);
+
+    // make sure we're CPU 0...
+    msr_write(MSR_TSC_AUX, 0);
 
     // remove the current thread and swap to the scheduler
     transfer(0, TASK_MEM(1));

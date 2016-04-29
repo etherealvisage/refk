@@ -1,7 +1,9 @@
 [BITS 64]
 [ORG 0xffffffffffe00000]
 
-task_state_region	equ 0xffffffffffe01000
+task_percpu_region	equ 0xffffffffffe01000
+task_percpu_size_log	equ 6
+task_percpu_size	equ (1 << task_percpu_size_log)
 
 ; Expected as input:
 ;	rdi: points to task state structure to store state into
@@ -76,10 +78,18 @@ transfer_control:
 
 	mov	cr3, rbx
 .skip_swap:
+	; get task percpu storage region
+	rdtscp
+	shl	ecx, task_percpu_size_log
+	lea	rax, [task_percpu_region + ecx]
+
 	; save "restored-into" task state pointer
-	; HACK: use first task slot for this
-	; TODO: remove this hack and use CPU-local storage
-	mov	qword [task_state_region], rsi
+	mov	qword [rax], rsi
+	; use rest of region for stack
+	lea	rsp, [rax + task_percpu_size]
+
+	;mov	qword [task_percpu_region], rsi
+	;mov	rsp, task_percpu_region + 256
 
 	; restore basic segment registers
 	mov	rax, qword [rsi + 20*8] ; es
@@ -115,9 +125,6 @@ transfer_control:
 	mov	r14, qword [rsi + 14*8]
 	mov	r15, qword [rsi + 15*8]
 
-	; we need a valid stack. As a hack, use the first task slot.
-	; TODO: remove this hack
-	mov	rsp, 0xffffffffffe01100
 
 	; stack push order: SS, RSP, RFLAGS, CS, RIP
 	mov	rax, qword [rsi + 23*8] ; ss
