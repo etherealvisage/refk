@@ -12,7 +12,8 @@
 #define LAPIC_REG_ICR_HI 0x31
 #define LAPIC_REG_TIMER 0x32
 #define LAPIC_REG_TIMER_ICR 0x38
-#define LAPIC_REG_TIMER_DIVIDE 0x3e
+#define LAPIC_REG_TIMER_CUR 0x39
+#define LAPIC_REG_TIMER_DIV 0x3e
 
 uint64_t lapic_base;
 
@@ -72,4 +73,54 @@ int lapic_ext_triggered(uint8_t vector) {
 
 void lapic_conditional_eoi(uint8_t vector) {
     if(lapic_ext_triggered(vector)) lapic_send_eoi();
+}
+
+void lapic_timer_setup() {
+    // divisor: 128
+    set_reg(LAPIC_REG_TIMER_DIV,
+        (get_reg(LAPIC_REG_TIMER_DIV) & ~0xb) | 0xa);
+
+    uint32_t lvt = get_reg(LAPIC_REG_TIMER);
+    // one-shot mode
+    lvt &= ~(1<<18 | 1<<17);
+
+    // masked
+    lvt |= 1<<16;
+
+    // vector
+    lvt &= ~0xff;
+
+    set_reg(LAPIC_REG_TIMER, lvt);
+}
+
+uint64_t lapic_timer_current() {
+    return get_reg(LAPIC_REG_TIMER_CUR);
+}
+
+void lapic_timer_set_initial(uint64_t value) {
+    set_reg(LAPIC_REG_TIMER_ICR, value);
+}
+
+void lapic_timer_periodic(uint64_t interval, uint64_t vector) {
+    uint32_t lvt = get_reg(LAPIC_REG_TIMER);
+    // periodic mode
+    lvt &= ~(1<<18 | 1<<17);
+    lvt |= 1<<17;
+
+    // masked
+    lvt |= (1<<16);
+
+    // vector
+    lvt &= ~0xff;
+    lvt |= (vector & 0xff);
+
+    set_reg(LAPIC_REG_TIMER, lvt);
+
+    // set up interval
+    set_reg(LAPIC_REG_TIMER_ICR, interval);
+
+    // unmask
+    lvt = get_reg(LAPIC_REG_TIMER);
+    lvt &= ~(1<<16);
+    set_reg(LAPIC_REG_TIMER, lvt);
 }

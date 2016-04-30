@@ -20,8 +20,11 @@ const char apsched_image[] = {
 static void init_ap(uint8_t id);
 static void ap_entry(uint64_t id);
 volatile uint64_t ap_semaphore;
+uint64_t ap_apic_ratio;
 
-void smpboot_init() {
+void smpboot_init(uint64_t apic_ratio) {
+    ap_apic_ratio = apic_ratio;
+
     // copy SMP boot code
     phy_write(0x4000, smpboot_image, sizeof(smpboot_image));
 
@@ -83,6 +86,12 @@ static void init_ap(uint8_t id) {
 static void ap_entry(uint64_t id) {
     ap_semaphore = 1;
 
+    lapic_setup();
+
+    lapic_timer_setup();
+    //lapic_timer_periodic(ap_apic_ratio * 1000, 0x30);
+    lapic_timer_periodic(0x1000, 0x30);
+
     msr_write(MSR_TSC_AUX, id);
 
     // enable syscall/sysret
@@ -92,6 +101,9 @@ static void ap_entry(uint64_t id) {
 
     msr_write(MSR_LSTAR, 0xffffa00000000000);
     msr_write(MSR_STAR, ((0x18UL + 3) << 48) | (0x08UL << 32));
+
+    __asm__("sti");
+    while(1) {}
 
     __asm__ __volatile__("syscall" : : : "rax", "rcx", "r10", "r11", "r12");
 

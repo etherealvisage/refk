@@ -213,6 +213,8 @@ void _start() {
     // begin timer
     __asm__("sti");
 
+    uint64_t apic_ratio = apics_synchronize();
+
     // create simple AP task
     {
         rlib_task_t task;
@@ -222,7 +224,7 @@ void _start() {
         __asm__ __volatile__("int $0xff");
     }
 
-    smpboot_init();
+    smpboot_init(apic_ratio);
 
     while(1) {}
 }

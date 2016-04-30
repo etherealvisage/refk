@@ -62,3 +62,21 @@ void apics_init() {
     }
 
 }
+
+uint64_t apics_synchronize() {
+    volatile uint64_t *counter = (void *)0xffff900000000000;
+
+    lapic_timer_setup();
+    const uint64_t initial = 0x40000000;
+    lapic_timer_set_initial(initial);
+
+    // one millisecond
+    uint64_t target = *counter + 1000000;
+    while(*counter <= target) {}
+
+    uint64_t elapsed = initial - lapic_timer_current();
+
+    d_printf("Elapsed: %x\n", elapsed);
+
+    return elapsed;
+}
