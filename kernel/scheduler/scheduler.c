@@ -28,9 +28,9 @@ static task_state_t *choose_next(task_state_t *current) {
         const uint64_t wanted_value =
             TASK_STATE_VALID | TASK_STATE_RUNNABLE;
         const uint64_t wanted_mask =
-            TASK_STATE_VALID | TASK_STATE_RUNNABLE | TASK_STATE_BLOCKED;
+            TASK_STATE_VALID | TASK_STATE_RUNNABLE | TASK_STATE_BLOCKED | TASK_STATE_APTASK;
 
-        if((TASK_MEM(in)->state & wanted_mask) != wanted_value) {                
+        if((TASK_MEM(in)->state & wanted_mask) != wanted_value) {
             continue;
         }
 

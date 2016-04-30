@@ -21,6 +21,13 @@
 #include "rlib/heap.h"
 #include "rlib/scheduler.h"
 
+static void aptest(void *unused) {
+    d_printf("AP task...\n");
+    while(1) {
+        //__asm__ __volatile__("int $0xff");
+    }
+}
+
 char *clone_string(const char *orig, uint64_t length) {
     char *ret = heap_alloc(length+1);
     mem_copy(ret, orig, length);
@@ -206,7 +213,17 @@ void _start() {
     // begin timer
     __asm__("sti");
 
+    // create simple AP task
+    {
+        rlib_task_t task;
+        rlib_create_task(RLIB_NEW_MEMSPACE, &task);
+        rlib_set_local_task(&task, aptest, 0, 0x10000);
+        rlib_ready_ap_task(&task);
+        __asm__ __volatile__("int $0xff");
+    }
+
     smpboot_init();
 
     while(1) {}
 }
+

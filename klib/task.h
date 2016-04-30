@@ -9,10 +9,12 @@
 #define TASK_ADDR(i) (TASK_BASE + 0x10000 + (i)*256)
 #define TASK_MEM(i) ((task_state_t *)(TASK_ADDR(i)))
 
-#define TASK_STATE_VALID    0x01
-#define TASK_STATE_RUNNABLE 0x02
-#define TASK_STATE_GATE     0x04
-#define TASK_STATE_BLOCKED  0x08
+#define TASK_STATE_VALID    0x01 // task slot in use
+#define TASK_STATE_RUNNABLE 0x02 // task slot ready for use?
+#define TASK_STATE_GATE     0x04 // task slot is a call gate?
+#define TASK_STATE_BLOCKED  0x08 // task slot waiting on synch object?
+#define TASK_STATE_APTASK   0x10 // task slot is for AP task?
+#define TASK_STATE_INUSE    0x20 // task slot is in use?
 
 typedef struct task_state_t {
     uint64_t rax;           // 0

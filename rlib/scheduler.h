@@ -14,6 +14,7 @@ void rlib_create_task(rlib_memory_space_t *memspace, rlib_task_t *task);
 void rlib_set_local_task(rlib_task_t *task, void (*function)(void *),
     void *data, uint64_t stack_size);
 void rlib_ready_task(rlib_task_t *task);
+void rlib_ready_ap_task(rlib_task_t *task);
 
 void rlib_reap_self();
 

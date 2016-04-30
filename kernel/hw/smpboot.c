@@ -89,12 +89,11 @@ static void ap_entry(uint64_t id) {
     msr_write(MSR_EFER, msr_read(MSR_EFER) | 1);
 
     // TODO: load IDT
-    // TODO: set up syscall MSRs
 
     msr_write(MSR_LSTAR, 0xffffa00000000000);
     msr_write(MSR_STAR, ((0x18UL + 3) << 48) | (0x08UL << 32));
 
-    __asm__ __volatile__("syscall");
+    __asm__ __volatile__("syscall" : : : "rax", "rcx", "r10", "r11", "r12");
 
     while(1) {}
 }

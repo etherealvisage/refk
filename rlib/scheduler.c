@@ -102,6 +102,22 @@ void rlib_ready_task(rlib_task_t *task) {
     rlib_process_queued();
 }
 
+void rlib_ready_ap_task(rlib_task_t *task) {
+    comm_t *schedin;
+    __asm__ __volatile__("mov %%gs:0x08, %%rax" : "=a"(schedin));
+
+    sched_in_packet_t in;
+    in.type = SCHED_SET_STATE;
+    in.req_id = rlib_sequence();
+    in.set_state.task_id = task->task_id;
+    in.set_state.index = SCHED_STATE;
+    in.set_state.value =
+        TASK_STATE_VALID | TASK_STATE_RUNNABLE | TASK_STATE_APTASK;
+    comm_write(schedin, &in, sizeof(in));
+
+    rlib_process_queued();
+}
+
 void rlib_reap_self() {
     comm_t *schedin;
     __asm__ __volatile__("mov %%gs:0x08, %%rax" : "=a"(schedin));
