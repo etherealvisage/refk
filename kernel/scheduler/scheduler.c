@@ -30,6 +30,12 @@ static task_state_t *choose_next(task_state_t *current) {
         const uint64_t wanted_mask =
             TASK_STATE_VALID | TASK_STATE_RUNNABLE | TASK_STATE_BLOCKED | TASK_STATE_APTASK;
 
+        if(TASK_MEM(in)->state & TASK_STATE_APTASK) {
+            d_printf("index: %x (%p)\n", in, TASK_ADDR(in));
+            d_printf("    rdi value: %x\n", TASK_MEM(in)->rdi);
+            d_printf("    state value: %x\n", TASK_MEM(in)->state);
+        }
+
         if((TASK_MEM(in)->state & wanted_mask) != wanted_value) {
             continue;
         }

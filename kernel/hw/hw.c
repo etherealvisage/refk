@@ -21,10 +21,26 @@
 #include "rlib/heap.h"
 #include "rlib/scheduler.h"
 
+#include "klib/phy.h"
+
 static void aptest(void *unused) {
     d_printf("AP task...\n");
+    __asm__("sti");
+    /*int variable = 42;
+    d_printf("variable address: %p\n", &variable);
+    __asm__("int $0x30");*/
     while(1) {
-        //__asm__ __volatile__("int $0xff");
+        phy_write8(0xb8000, 0x41);
+        phy_write8(0xb8001, 0x6);
+    }
+}
+
+static void aptest2(void *unused) {
+    d_printf("AP task 2...\n");
+    __asm__("sti");
+    while(1) {
+        phy_write8(0xb8000, 0x42);
+        phy_write8(0xb8001, 0x6);
     }
 }
 
@@ -221,11 +237,19 @@ void _start() {
         rlib_create_task(RLIB_NEW_MEMSPACE, &task);
         rlib_set_local_task(&task, aptest, 0, 0x10000);
         rlib_ready_ap_task(&task);
-        __asm__ __volatile__("int $0xff");
     }
+    {
+        rlib_task_t task;
+        rlib_create_task(RLIB_NEW_MEMSPACE, &task);
+        rlib_set_local_task(&task, aptest2, 0, 0x10000);
+        rlib_ready_ap_task(&task);
+    }
+
+    d_printf("saved rdi values:\n");
+    __asm__("int $0xff");
+    d_printf("end rdi saved values\n");
 
     smpboot_init(apic_ratio);
 
     while(1) {}
 }
-

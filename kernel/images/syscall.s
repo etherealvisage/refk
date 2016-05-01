@@ -13,6 +13,7 @@ task_percpu_size	equ (1 << task_percpu_size_log)
 
 ; Calling convention:
 ; Clobbered registers: rax, rcx, r10, r11, r12
+; If no "current" task, use rsi as the task.
 
 syscall:
 	; get safe stack
@@ -39,7 +40,6 @@ syscall:
 	cmp	rax, 0
 	xchg	rax, rdi
 	je	.skip_save
-	; need starting index
 
 	; save GPRs
 	mov	qword [rdi + 0*8], 0x1234567 ; rax clobbered
@@ -93,11 +93,12 @@ syscall:
 
 	; clear "in use" flag
 	btr	qword [rdi + 27*8], 5
+
+	mov	rsi, rdi
 .skip_save:
 	; in case we took the shortcut, conditional-move task #0 into rdi
-	mov	rax, task_state_region
-	cmove	rdi, rax
 
+	mov	rdi, rsi
 
 	; find current index
 	sub	rdi, task_state_region
@@ -105,6 +106,9 @@ syscall:
 
 	mov	rcx, num_tasks
 .search_loop:
+	inc	rdi
+	and	rdi, (num_tasks - 1)
+
 	mov	rax, rdi
 	shl	rax, 8
 	add	rax, task_state_region
@@ -132,16 +136,14 @@ syscall:
 
 	; something blocked it... release lock
 	lock btr qword [rax + 27*8], 5
-
 .skip_lock:
-	inc	rdi
-	and	rdi, (num_tasks - 1)
 	loop	.search_loop
 
 	; if we're here, there are no tasks available to schedule
 	; wait for next timer interrupt
 
 	.wait_loop:
+	pause
 	jmp	.wait_loop
 
 .found_task:
@@ -149,3 +151,6 @@ syscall:
 	mov	rsi, rax
 	mov	rax, transfer_control
 	jmp	rax
+
+debug:
+	jmp	debug

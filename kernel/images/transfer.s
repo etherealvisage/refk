@@ -142,7 +142,6 @@ transfer_control:
 	mov	rax, qword [rsi + 0*8]
 	push	rax
 
-
 	; we have to make sure ds is still valid here for all the accesses,
 	; hence this weird ordering
 	mov	rax, qword [rsi + 19*8] ; ds
@@ -153,5 +152,3 @@ transfer_control:
 	pop	rax ; pop the stored value of rax
 
 	iretq
-.exit:
-	ret

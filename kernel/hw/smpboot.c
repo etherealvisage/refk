@@ -4,6 +4,7 @@
 #include "klib/kmem.h"
 #include "klib/task.h"
 #include "klib/msr.h"
+#include "klib/desc.h"
 
 #include "acpica/acpi.h"
 
@@ -11,10 +12,6 @@
 
 const char smpboot_image[] = {
 #include "../images/smpboot.h"
-};
-
-const char apsched_image[] = {
-#include "../images/apsched.h"
 };
 
 static void init_ap(uint8_t id);
@@ -89,23 +86,33 @@ static void ap_entry(uint64_t id) {
     lapic_setup();
 
     lapic_timer_setup();
-    //lapic_timer_periodic(ap_apic_ratio * 1000, 0x30);
-    lapic_timer_periodic(0x1000, 0x30);
+    lapic_timer_periodic(ap_apic_ratio * 1000, 0x30);
+    //lapic_timer_periodic(0x1000, 0x30);
 
     msr_write(MSR_TSC_AUX, id);
 
     // enable syscall/sysret
     msr_write(MSR_EFER, msr_read(MSR_EFER) | 1);
 
-    // TODO: load IDT
+    /* load IDT */
+    __asm__ __volatile__(
+        "pushq %%rax \n"
+        "sub $2, %%rsp \n"
+        "movw $0xffff, 0(%%rsp) \n"
+        "lidt 0(%%rsp) \n"
+        "add $10, %%rsp \n"
+        :
+        : "a"(DESC_IDT_ADDR));
 
     msr_write(MSR_LSTAR, 0xffffa00000000000);
     msr_write(MSR_STAR, ((0x18UL + 3) << 48) | (0x08UL << 32));
 
-    __asm__("sti");
-    while(1) {}
-
-    __asm__ __volatile__("syscall" : : : "rax", "rcx", "r10", "r11", "r12");
+    __asm__ __volatile__(
+        "mov $0xffffffffffe10000, %%rsi \n"
+        "syscall"
+        : : "si"(TASK_ADDR(0))
+        : "rax", "rcx", "r10", "r11", "r12");
+    //__asm__ __volatile__("syscall" : : "di"(TASK_ADDR(0)): "rax", "rcx", "r10", "r11", "r12");
 
     while(1) {}
 }

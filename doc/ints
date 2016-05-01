@@ -1,5 +1,6 @@
 BSP interrupt map:
 0x00-0x1f:      Default x86 interrupts
+0x30:           AP APIC timer
 0x60:           HPET master timer MSI
 0x80-X:         IRQ map
 0xfe:           Request processing (task ID in rax)

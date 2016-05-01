@@ -316,7 +316,6 @@ int_isr_%1:
 	mov	rdi, qword [rax]
 	pop	rax
 
-	;mov	rdi, qword [task_percpu_region]
 	mov	qword [rsi + 3*8], rdi ; rdx
 
 	call	transfer_control
@@ -345,6 +344,98 @@ int_isr_%1:
 	pop	r9
 
 	iretq
+%endmacro
+
+%macro ap_apic_isr 1
+int_isr_%1:
+	; get task state region to save to
+	push	rdi
+	push	rax
+	push	rdx
+	push	rcx
+	rdtscp
+	shl	rcx, task_percpu_size_log
+	lea	rax, [task_percpu_region + ecx]
+
+	pop	rcx
+	pop	rdx
+	mov	rdi, qword [rax]
+	pop	rax
+	cld
+
+
+	; save GPRs
+	mov	qword [rdi + 0*8], rax
+	mov	qword [rdi + 1*8], rbx
+	mov	qword [rdi + 2*8], rcx
+	mov	qword [rdi + 3*8], rdx
+	mov	qword [rdi + 4*8], rsi
+	pop	rax
+	mov	qword [rdi + 5*8], rax
+	mov	rax, qword [rsp + 24] ; rsp
+	mov	qword [rdi + 6*8], rax
+	mov	qword [rdi + 7*8], rbp
+	mov	qword [rdi + 8*8], r8
+	mov	qword [rdi + 9*8], r9
+	mov	qword [rdi + 10*8], r10
+	mov	qword [rdi + 11*8], r11
+	mov	qword [rdi + 12*8], r12
+	mov	qword [rdi + 13*8], r13
+	mov	qword [rdi + 14*8], r14
+	mov	qword [rdi + 15*8], r15
+
+	mov	rax, qword [rsp + 16] ; rflags
+	mov	qword [rdi + 16*8], rax
+	mov	rax, qword [rsp + 0] ; rip
+	mov	qword [rdi + 17*8], rax
+
+	mov	rax, qword [rsp + 8] ; cs
+	mov	qword [rdi + 18*8], rax
+	mov	ax, ds
+	mov	qword [rdi + 19*8], rax
+	mov	ax, es
+	mov	qword [rdi + 20*8], rax
+	mov	ax, fs
+	mov	qword [rdi + 21*8], rax
+	mov	ax, gs
+	mov	qword [rdi + 22*8], rax
+	mov	rax, qword [rsp + 32] ; ss
+	mov	qword [rdi + 23*8], rax
+	; save FS_BASE
+	mov	ecx, 0xc0000100 ; FS_BASE MSR
+	rdmsr
+	mov	dword [rdi + 24*8], eax
+	mov	dword [rdi + 24*8 + 4], edx
+	; save GS_BASE
+	mov	ecx, 0xc0000101 ; GS_BASE MSR
+	rdmsr
+	mov	dword [rdi + 25*8], eax
+	mov	dword [rdi + 25*8 + 4], edx
+
+	mov	rax, cr3
+	mov	qword [rdi + 26*8], rax
+
+	; clear "in use" flag
+	btr	qword [rdi + 27*8], 5
+
+	; state saved!
+
+	; clear existing state
+	rdtscp
+	shl	rcx, task_percpu_size_log
+	mov	rax, task_percpu_region
+	add	rcx, rax
+	mov	qword [rcx], 0
+
+	; HACK!
+	; tell APIC we're finished
+	mov	rax, 0xffffc00000000000 + 0xfee00000 + 0xb0
+	mov	dword [rax], 1
+
+	; rsi will be used as hint
+	mov	rsi, rdi
+
+	syscall
 %endmacro
 
 basic_isr 0
@@ -395,7 +486,8 @@ basic_isr 44
 basic_isr 45
 basic_isr 46
 basic_isr 47
-basic_isr 48
+;basic_isr 48
+ap_apic_isr 48
 basic_isr 49
 basic_isr 50
 basic_isr 51
