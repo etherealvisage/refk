@@ -23,24 +23,16 @@
 
 #include "klib/phy.h"
 
-static void aptest(void *unused) {
-    d_printf("AP task...\n");
-    __asm__("sti");
-    /*int variable = 42;
-    d_printf("variable address: %p\n", &variable);
-    __asm__("int $0x30");*/
-    while(1) {
-        phy_write8(0xb8000, 0x41);
-        phy_write8(0xb8001, 0x6);
-    }
-}
-
-static void aptest2(void *unused) {
-    d_printf("AP task 2...\n");
+static void aptest(void *offset) {
+    uint8_t val = 0x41 + (uint64_t)offset;
     __asm__("sti");
     while(1) {
-        phy_write8(0xb8000, 0x42);
-        phy_write8(0xb8001, 0x6);
+        uint64_t id;
+        __asm__("rdtscp" : "=c"(id) : : "rax", "rdx");
+        phy_write8(0xb8000 + id*2, val);
+        phy_write8(0xb8001 + id*2, 0x6);
+        /*phy_write8(0xb8000, val);
+        phy_write8(0xb8001, 0x6);*/
     }
 }
 
@@ -231,17 +223,11 @@ void _start() {
 
     uint64_t apic_ratio = apics_synchronize();
 
-    // create simple AP task
-    {
+    // create simple AP tasks
+    for(uint64_t i = 0; i < 16; i ++) {
         rlib_task_t task;
         rlib_create_task(RLIB_NEW_MEMSPACE, &task);
-        rlib_set_local_task(&task, aptest, 0, 0x10000);
-        rlib_ready_ap_task(&task);
-    }
-    {
-        rlib_task_t task;
-        rlib_create_task(RLIB_NEW_MEMSPACE, &task);
-        rlib_set_local_task(&task, aptest2, 0, 0x10000);
+        rlib_set_local_task(&task, aptest, (void *)i, 0x10000);
         rlib_ready_ap_task(&task);
     }
 

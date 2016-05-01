@@ -310,7 +310,8 @@ int_isr_%1:
 	push	rcx
 	rdtscp
 	shl	ecx, task_percpu_size_log
-	lea	rax, [task_percpu_region + ecx]
+	mov	rax, task_percpu_region
+	add	rax, rcx
 	pop	rcx
 	pop	rdx
 	mov	rdi, qword [rax]
@@ -355,7 +356,8 @@ int_isr_%1:
 	push	rcx
 	rdtscp
 	shl	rcx, task_percpu_size_log
-	lea	rax, [task_percpu_region + ecx]
+	mov	rax, task_percpu_region
+	add	rax, rcx
 
 	pop	rcx
 	pop	rdx

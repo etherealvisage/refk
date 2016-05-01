@@ -78,18 +78,19 @@ transfer_control:
 
 	mov	cr3, rbx
 .skip_swap:
+
 	; get task percpu storage region
 	rdtscp
-	shl	ecx, task_percpu_size_log
-	lea	rax, [task_percpu_region + ecx]
 
-	; save "restored-into" task state pointer
-	mov	qword [rax], rsi
+	shl	ecx, task_percpu_size_log
+	mov	rax, task_percpu_region
+	add	rax, rcx
+
 	; use rest of region for stack
 	lea	rsp, [rax + task_percpu_size]
 
-	;mov	qword [task_percpu_region], rsi
-	;mov	rsp, task_percpu_region + 256
+	; save "restored-into" task state pointer
+	mov	qword [rax], rsi
 
 	; restore basic segment registers
 	mov	rax, qword [rsi + 20*8] ; es

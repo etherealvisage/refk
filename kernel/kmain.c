@@ -32,6 +32,7 @@ void kmain(uint64_t *mem) {
     d_printf("Rebooting...\n");
     kmem_init(mem); // initialize bootstrap memory manager
 
+
     // syscall initialization
     {
         uint64_t syscall_page = kmem_getpage();
