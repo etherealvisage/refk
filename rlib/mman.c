@@ -47,6 +47,7 @@ uint64_t rlib_anonymous(uint64_t address, uint64_t size) {
     in.map_anonymous.address = address;
     in.map_anonymous.size = size;
     comm_write(schedin, &in, sizeof(in));
+    comm_flush(schedin);
     __asm__ __volatile__("int $0xfe" : : "a"(own_id));
 
     sched_out_packet_t out;
@@ -78,6 +79,7 @@ void rlib_copy(uint64_t address, rlib_memory_space_t *origin,
     in.map_mirror.oaddress = oaddress;
     in.map_mirror.size = size;
     comm_write(schedin, &in, sizeof(in));
+    comm_flush(schedin);
 
     sched_out_packet_t out;
     uint64_t length;

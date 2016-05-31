@@ -31,6 +31,7 @@ void rlib_create_task(rlib_memory_space_t *memspace, rlib_task_t *task) {
     __asm__ __volatile__("mov %%gs:0x10, %%rax" : "=a"(schedout));
 
     comm_write(schedin, &in, sizeof(in));
+    comm_flush(schedin);
     rlib_process_queued();
 
     sched_out_packet_t out;
@@ -78,6 +79,7 @@ void rlib_set_local_task(rlib_task_t *task, void (*function)(void *),
     stack_size = (stack_size + 0xfff) & ~0xfff;
     in.set_state.value = rlib_anonymous(0, stack_size) + stack_size;
     comm_write(schedin, &in, sizeof(in));
+    comm_flush(schedin);
 
     rlib_process_queued();
 
@@ -99,6 +101,7 @@ void rlib_ready_task(rlib_task_t *task) {
     in.set_state.index = SCHED_STATE;
     in.set_state.value = TASK_STATE_VALID | TASK_STATE_RUNNABLE;
     comm_write(schedin, &in, sizeof(in));
+    comm_flush(schedin);
 
     rlib_process_queued();
 }
@@ -115,6 +118,7 @@ void rlib_ready_ap_task(rlib_task_t *task) {
     in.set_state.value =
         TASK_STATE_VALID | TASK_STATE_RUNNABLE | TASK_STATE_APTASK;
     comm_write(schedin, &in, sizeof(in));
+    comm_flush(schedin);
 
     rlib_process_queued();
 }
@@ -128,6 +132,7 @@ void rlib_reap_self() {
     in.req_id = rlib_sequence();
     in.reap.task_id = 0;
     comm_write(schedin, &in, sizeof(in));
+    comm_flush(schedin);
 
     rlib_process_queued();
 
@@ -145,6 +150,7 @@ void rlib_wait(uint64_t *pointer, uint64_t value) {
     in.wait.address = (uint64_t)pointer;
     in.wait.value = (uint64_t)value;
     comm_write(schedin, &in, sizeof(in));
+    comm_flush(schedin);
 
     rlib_process_queued();
 }
@@ -160,6 +166,7 @@ void rlib_wake(uint64_t *pointer, uint64_t value, uint64_t count) {
     in.wake.value = (uint64_t)value;
     in.wake.count = count;
     comm_write(schedin, &in, sizeof(in));
+    comm_flush(schedin);
 
     rlib_process_queued();
 }
