@@ -16,6 +16,7 @@ enum {
     SCHED_SPAWN,
     SCHED_SET_STATE,
     SCHED_REAP,
+    SCHED_PING,
 };
 
 enum {
@@ -108,6 +109,9 @@ typedef struct sched_in_packet_t {
         struct {
             uint64_t task_id;
         } reap;
+        struct {
+            uint64_t canary;
+        } ping;
     };
 } sched_in_packet_t;
 
@@ -123,6 +127,9 @@ typedef struct sched_out_packet_t {
             uint64_t task_id;
             uint64_t root_id;
         } spawn;
+        struct {
+            uint64_t canary;
+        } ping;
     };
 } sched_out_packet_t;
 

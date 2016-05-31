@@ -94,6 +94,9 @@ static void ap_entry(uint64_t id) {
     // enable syscall/sysret
     msr_write(MSR_EFER, msr_read(MSR_EFER) | 1);
 
+    // disable MTRRs, default memory type is uncacheable //write-back
+    //msr_write(MSR_MTRR_DEF_TYPE, 0x0 | (1<<11));
+
     /* load IDT */
     __asm__ __volatile__(
         "pushq %%rax \n"

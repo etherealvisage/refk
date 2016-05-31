@@ -41,8 +41,6 @@ void rlib_create_task(rlib_memory_space_t *memspace, rlib_task_t *task) {
 
     task->task_id = out.spawn.task_id;
     task->root_id = out.spawn.root_id;
-
-    d_printf("task ID: %x\n", task->task_id);
 }
 
 static void rlib_local_task_wrapper(void (*function)(void *), void *context) {
@@ -80,8 +78,6 @@ void rlib_set_local_task(rlib_task_t *task, void (*function)(void *),
     stack_size = (stack_size + 0xfff) & ~0xfff;
     in.set_state.value = rlib_anonymous(0, stack_size) + stack_size;
     comm_write(schedin, &in, sizeof(in));
-
-    d_printf("task stack address: %x\n", in.set_state.value);
 
     rlib_process_queued();
 

@@ -11,9 +11,9 @@ int comm_init(comm_t *cc, uint64_t length, int type) {
     cc->flags = 0;
     cc->ring_begin = cc->ring_end = 0;
     if(type == COMM_SIMPLE) {
-        cc->simple.packet_count = 0;
         cc->flags = type;
         cc->data_begin = offsetof(comm_t, simple.last);
+        cc->data_begin = (cc->data_begin + 127) & ~0x7f;
     }
     else if(type == COMM_MULTI) {
         cc->flags = type;
@@ -31,7 +31,8 @@ int comm_init(comm_t *cc, uint64_t length, int type) {
 }
 
 static uint64_t comm_remaining(comm_t *cc) {
-    if(cc->ring_begin <= cc->ring_end) {
+    if(cc->ring_begin == cc->ring_end) return cc->data_length;
+    else if(cc->ring_begin < cc->ring_end) {
         uint64_t used = (cc->ring_end - cc->ring_begin);
         return cc->data_length - used;
     }
@@ -87,15 +88,16 @@ int comm_put(comm_t *cc, void *data, uint64_t data_size) {
     comm_put_data(cc, &dsize, sizeof(dsize));
     comm_put_data(cc, data, data_size);
 
-    atomic_inc(&cc->simple.packet_count);
+    //atomic_inc(&cc->simple.packet_count);
 
     return 0;
 }
 
 int comm_peek(comm_t *cc, void *data, uint64_t *data_size) {
     // is there any data waiting?
-    if(cc->simple.packet_count == 0) return 1;
-    atomic_dec(&cc->simple.packet_count);
+    //if(cc->simple.packet_count == 0) return 1;
+    //atomic_dec(&cc->simple.packet_count);
+    if(cc->ring_begin == cc->ring_end) return 1;
 
     uint32_t dsize;
     comm_get_data(cc, &dsize, sizeof(dsize));

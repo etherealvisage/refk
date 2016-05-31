@@ -335,9 +335,9 @@ int_isr_%1:
 	push	rax
 	mov	r9, 0xffff900000000000 ; status page base
 	; grab increment
-	mov	eax, dword [r9 + 0xc00]
+	mov	rax, qword [r9 + 0xc00]
 	; add increment
-	add	dword [r9 + 0x000], eax
+	add	qword [r9 + 0x000], rax
 	pop	rax
 	mov	r9, 0xffffc00000000000 + 0xfee00000 ; phy map base + apic base
 	; signal end-of-interrupt

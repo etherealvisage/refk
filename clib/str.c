@@ -20,3 +20,31 @@ int str_ncmp(const char *s1, const char *s2, uint64_t maxlen) {
     }
     return 0;
 }
+
+int str_lto(char *s, uint64_t d) {
+    if(d == 0) {
+        s[0] = '0';
+        s[1] = 0;
+        return 0;
+    }
+
+    char *p = s;
+    while(d) {
+        *p = (d%10) + '0';
+        p ++;
+        d /= 10;
+    }
+
+    *p = 0;
+    p --;
+    char *q = s;
+    while(q < p) {
+        char t = *q;
+        *q = *p;
+        *p = t;
+        q ++;
+        p --;
+    }
+
+    return 0;
+}

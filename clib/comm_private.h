@@ -11,14 +11,12 @@ struct comm_t {
     uint64_t data_begin, data_length;
     uint64_t flags;
 
-    uint64_t ring_begin;
-    uint64_t ring_end;
+    // multiple-thread values
+    uint64_t __attribute__((aligned(128))) ring_begin;
+    uint64_t __attribute__((aligned(128))) ring_end;
 
     union {
         struct {
-            // atomic counter
-            uint64_t packet_count;
-
             char last[0];
         } simple;
         struct {

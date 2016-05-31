@@ -73,7 +73,7 @@ def gen_flags(env):
 
 
 def gcc(env):
-    env.Append(CFLAGS = "-std=c99")
+    env.Append(CFLAGS = "-std=c99 -O3")
     env.Append(CFLAGS = "-W -Wall -Wextra -nostdlib -nodefaultlibs -ffreestanding")
     env.Append(CFLAGS = "-mcmodel=large -m64 -mno-red-zone")
     env.Append(CFLAGS = "-Werror -Wno-error=unused-variable -Wno-error=unused-function")
@@ -83,7 +83,7 @@ def gcc(env):
 
 def clang(env):
     env.Replace(CC = "clang")
-    env.Append(CFLAGS = "-std=c99")
+    env.Append(CFLAGS = "-std=c99 -O3")
     env.Append(CFLAGS = "-W -Wall -Wextra -nostdlib -ffreestanding")
     env.Append(CFLAGS = "-mcmodel=large -m64 -mno-red-zone")
     env.Append(CFLAGS = "-Werror -Wno-error=unused-variable -Wno-error=unused-function")
@@ -100,7 +100,7 @@ else:
     clang(env)
 
 # for non-debug versions
-#env.Append(CFLAGS = "-DNDEBUG")
+env.Append(CFLAGS = "-DNDEBUG")
 
 Export("env")
 

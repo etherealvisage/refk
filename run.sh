@@ -4,6 +4,10 @@ if [[ $1 == "debug" ]]; then
     EXTRA_PARAMS="-serial file:serial -d int,cpu_reset"
 fi
 
+if [[ $1 == "log" ]]; then
+    EXTRA_PARAMS="-serial file:serial"
+fi
+
 EXTRA_PARAMS="$EXTRA_PARAMS -monitor tcp:localhost:4444,server"
 
 # environment variables

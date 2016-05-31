@@ -2,6 +2,7 @@
 #define MSRS_H
 
 #define MSR_APIC_BASE 0x1b
+#define MSR_MTRR_DEF_TYPE 0x2ff
 #define MSR_EFER    0xc0000080
 #define MSR_STAR    0xc0000081
 #define MSR_LSTAR   0xc0000082

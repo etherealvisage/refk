@@ -4,6 +4,7 @@
 
 #include "klib/d.h"
 #include "klib/task.h"
+#include "klib/msr.h"
 
 #include "../scheduler/interface.h"
 
@@ -20,6 +21,7 @@
 #include "rlib/global.h"
 #include "rlib/heap.h"
 #include "rlib/scheduler.h"
+#include "rlib/comm.h"
 
 #include "klib/phy.h"
 
@@ -34,6 +36,127 @@ static void aptest(void *offset) {
         /*phy_write8(0xb8000, val);
         phy_write8(0xb8001, 0x6);*/
     }
+}
+
+uint64_t rdtsc() {
+    uint32_t low, high;
+    __asm__("rdtscp" : "=a"(low), "=d"(high) : : "rcx");
+    return low | ((uint64_t)high << 32);
+}
+
+#include "../scheduler/interface.h"
+
+static void print_string(const char *string, int x, int y) {
+    uint64_t d = 0xb8000 + (80*y + x)*2;
+    while(*string) {
+        phy_write8(d, *string);
+        phy_write8(d+1, 0x6);
+        d += 2;
+        string ++;
+    }
+}
+
+static void print_value(uint64_t value, int x, int y) {
+    char string[32];
+    char *p = string;
+    str_lto(string, value);
+    uint64_t d = 0xb8000 + (80*y + x)*2;
+    while(*p) {
+        phy_write8(d, *p);
+        phy_write8(d+1, 0x6);
+        d += 2;
+        p++;
+    }
+}
+
+// test #1: time for batch processing 1,000,000 requests
+static void aptime1(void *offset) {
+    if(offset != 0) while(1) {}
+    d_printf("aptime1()\n");
+    uint64_t own_id;
+    comm_t *schedin, *schedout;
+    __asm__ __volatile__("mov %%gs:0x00, %%rax" : "=a"(own_id));
+    __asm__ __volatile__("mov %%gs:0x08, %%rax" : "=a"(schedin));
+    __asm__ __volatile__("mov %%gs:0x10, %%rax" : "=a"(schedout));
+
+    d_printf("schedin: %x\n", schedin);
+    d_printf("schedout: %x\n", schedout);
+
+    volatile uint64_t *counter = (void *)0xffff900000000000;
+
+    const uint64_t num = 1000000;
+    uint64_t gen = 0;
+    uint64_t min = -1ul;
+    uint64_t max = 0;
+    while(1) {
+    // delay one second
+    {
+        uint64_t target = *counter + 1000000000;
+        while(*counter < target) {}
+    }
+
+    uint64_t before = rdtsc();
+    uint64_t stalls = 0;
+
+    /*
+    for(uint64_t i = 0; i < num; i ++) {
+        sched_in_packet_t in;
+        in.type = SCHED_PING;
+        in.req_id = i+1;
+        int ret = comm_write(schedin, &in, sizeof(in));
+        if(ret) {
+            stalls ++;
+            while(comm_write(schedin, &in, sizeof(in))) { __asm__("pause"); }
+        }
+    }
+    */
+
+    uint64_t target = *counter + 1000000000;
+    uint64_t count = 0;
+    for(; ; count ++) {
+        if(*counter >= target) break;
+        sched_in_packet_t in;
+        in.type = SCHED_PING;
+        in.req_id = count+1;
+        int ret = comm_write(schedin, &in, sizeof(in));
+        if(ret) {
+            stalls ++;
+            while(1) {
+                for(int i = 0; i < 10000000; i ++) __asm__ __volatile__("pause");
+                if(!comm_write(schedin, &in, sizeof(in))) break;
+            }
+        }
+    }
+
+    uint64_t after = rdtsc();
+
+    print_string("duration:", 0, 0);
+    print_value(after - before, 16, 0);
+    print_value((after - before + num - 1) / num, 32, 0);
+
+    if(after - before < min) min = after - before;
+    print_string("min:", 0, 1);
+    print_value(min, 16, 1);
+
+    if(after - before > max) max = after - before;
+    print_string("max:", 0, 2);
+    print_value(max, 16, 2);
+
+    print_string("stalls:", 0, 3);
+    print_value(stalls, 16, 3);
+
+    print_string("count:", 0, 4);
+    print_value(count, 16, 4);
+
+    print_string("generation:", 0, 5);
+    print_value(gen, 16, 5);
+    gen ++;
+    }
+
+    while(1) { }
+        //phy_write8(0xb8000, 0x42);
+        //phy_write8(0xb8001, 0x6);
+    //}
 }
 
 char *clone_string(const char *orig, uint64_t length) {
@@ -224,18 +347,29 @@ void _start() {
     uint64_t apic_ratio = apics_synchronize();
 
     // create simple AP tasks
-    for(uint64_t i = 0; i < 16; i ++) {
+    for(uint64_t i = 0; i < 3; i ++) {
         rlib_task_t task;
         rlib_create_task(RLIB_NEW_MEMSPACE, &task);
-        rlib_set_local_task(&task, aptest, (void *)i, 0x10000);
+        //rlib_set_local_task(&task, aptest, (void *)i, 0x10000);
+        rlib_set_local_task(&task, aptime1, (void *)i, 0x10000);
         rlib_ready_ap_task(&task);
     }
 
-    d_printf("saved rdi values:\n");
-    __asm__("int $0xff");
-    d_printf("end rdi saved values\n");
-
     smpboot_init(apic_ratio);
+
+    // make default memory type writeback
+    //msr_write(MSR_MTRR_DEF_TYPE, 0x0 | (1<<11));
+    // mark all memory except for 0xffffc00000000000 - 0xffffcfffffffffff (phy map) as writeback
+    
+
+    rlib_reap_self();
+    // mark self as not runnable...
+    //TASK_MEM(2)->state &= ~TASK_STATE_RUNNABLE;
+
+    //d_printf("task state: %x\n", TASK_MEM(2)->state);
+
+    // give up timeslot
+    __asm__("int $0xff");
 
     while(1) {}
 }

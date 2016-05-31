@@ -139,6 +139,7 @@ static int process(queue_entry *q) {
             queue[queue_size].task_id = task_id;
             queue[queue_size].info = info;
             queue_size ++;
+            d_printf("New queue size: %x\n", queue_size);
 
             break;
         }
@@ -154,11 +155,18 @@ static int process(queue_entry *q) {
                 // definitely don't send status update if reaping self...
                 status.req_id = 0;
             }
-            task_info_t *info = q->info;
+            d_printf("Reaping task...\n");
+            // XXX: DEBUGGING
+            //task_info_t *info = q->info;
             sched_task_reap(id);
             remove_from_queue(id);
-            heap_free(info);
+            //heap_free(info);
 
+            break;
+        }
+        case SCHED_PING: {
+            status.ping.canary = in.ping.canary;
+            //d_printf("Processing ping!\n");
             break;
         }
         default:
@@ -184,6 +192,9 @@ static void remove_from_queue(uint64_t id) {
     }
 }
 
+// debugging!
+#include "clib/comm_private.h"
+
 void listen(task_state_t *hw_task) {
     queue_size = 0;
 
@@ -197,14 +208,34 @@ void listen(task_state_t *hw_task) {
         hw_task->state |= TASK_STATE_RUNNABLE;
     }
 
+    __asm__("sti");
+
+    uint64_t count = 0;
     while(1) {
         int any = 0;
+        count ++;
         for(int i = 0; i < queue_size; i ++) {
             any |= process(queue + i);
         }
         if(!any) {
             __asm__ __volatile__("int $0xff");
         }
+        for(int i = 0; i < 10000000; i ++) __asm__ __volatile__("pause");
+        /*if(count % 1024 == 0) {
+            d_printf("count: %x\n", count);
+        }
+        if(count == 0x2400 || count == 0x2000 || count == 0x2800) {
+            d_printf("Investigation time!\n");
+            d_printf("queue entries:\n");
+            for(int i = 0; i < queue_size; i ++) {
+                d_printf("\tentry #%x\n", i);
+                d_printf("\t\ttask ID: %x\n", queue[i].task_id);
+                d_printf("\t\ttask sin: %p\n", queue[i].info->sin);
+                d_printf("\t\tsin begin: %x\n", queue[i].info->sin->ring_begin);
+                d_printf("\t\tsin end: %x\n", queue[i].info->sin->ring_end);
+                //queue[i].task_id
+            }
+        }*/
     }
 }
 

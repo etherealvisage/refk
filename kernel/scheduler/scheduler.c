@@ -30,12 +30,6 @@ static task_state_t *choose_next(task_state_t *current) {
         const uint64_t wanted_mask =
             TASK_STATE_VALID | TASK_STATE_RUNNABLE | TASK_STATE_BLOCKED | TASK_STATE_APTASK;
 
-        if(TASK_MEM(in)->state & TASK_STATE_APTASK) {
-            d_printf("index: %x (%p)\n", in, TASK_ADDR(in));
-            d_printf("    rdi value: %x\n", TASK_MEM(in)->rdi);
-            d_printf("    state value: %x\n", TASK_MEM(in)->state);
-        }
-
         if((TASK_MEM(in)->state & wanted_mask) != wanted_value) {
             continue;
         }
@@ -67,9 +61,16 @@ static void process_queue(uint64_t __attribute__((unused)) vector,
 
     process_for(ret_task->rax);
 
-    // if the current task just became blocked, choose a new one
-    if(ret_task->state & TASK_STATE_BLOCKED) {
+    // if the current task just became blocked, or is no longer runnable/valid,
+    // choose a new one
+    if((ret_task->state & TASK_STATE_BLOCKED)
+        || (ret_task->state & TASK_STATE_VALID) == 0
+        || (ret_task->state & TASK_STATE_RUNNABLE) == 0) {
+
+        d_printf("Choosing new task!\n");
+
         ret_task = choose_next(ret_task);
+        d_printf("Chose: %x\n", ret_task);
     }
 
     void (*transfer)(uint64_t, task_state_t *) = (void *)0xffffffffffe00000;
