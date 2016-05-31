@@ -6,19 +6,30 @@
 
 #include "comm_private.h"
 
-int comm_init(comm_t *cc, uint64_t length, int type) {
+int comm_init(comm_t *cc, uint64_t length, int flags) {
     cc->total_length = length;
-    cc->flags = 0;
+    cc->flags = flags;
     cc->ring_begin = cc->ring_end = 0;
-    if(type == COMM_SIMPLE) {
-        cc->flags = type;
+    if((flags & COMM_TYPE_MASK) == COMM_SIMPLE) {
         cc->data_begin = offsetof(comm_t, simple.last);
         cc->data_begin = (cc->data_begin + 127) & ~0x7f;
     }
-    else if(type == COMM_MULTI) {
-        cc->flags = type;
+    else if((flags & COMM_TYPE_MASK) == COMM_MULTI) {
         // NYI
         while(1) {}
+    }
+    else if((flags & COMM_TYPE_MASK) == COMM_BUCKETED) {
+        cc->data_begin = offsetof(comm_t, bucketed.last);
+        cc->data_begin = (cc->data_begin + 127) & ~0x7f;
+
+        uint64_t bucket_size = 128;
+        bucket_size <<= (flags&COMM_BUCKETSIZE_MASK) >> COMM_BUCKETSIZE_SHIFT;
+
+        cc->bucketed.bucket_size = bucket_size;
+        cc->bucketed.buckets = (length - cc->data_begin) / bucket_size;
+
+        cc->bucketed.current_read = -1;
+        cc->bucketed.current_write = -1;
     }
     else {
         // invalid
@@ -110,5 +121,121 @@ int comm_peek(comm_t *cc, void *data, uint64_t *data_size) {
         comm_get_data(cc, data, dsize);
         *data_size = dsize;
         return 0;
+    }
+}
+
+static void *comm_bucket(struct comm_t *cc, uint64_t index) {
+    uint64_t off = cc->data_begin + index * cc->bucketed.bucket_size;
+
+    return (void *)((char *)cc + off);
+}
+
+static int comm_select_read_bucket(struct comm_t *cc) {
+    uint64_t filled = cc->buckets_filled;
+    uint64_t processed = cc->buckets_processed;
+    if(filled > processed) {
+        cc->bucketed.current_read = (processed + 1) % cc->bucketed.buckets;
+        cc->bucketed.current_read_offset = 0;
+        return 0;
+    }
+    else {
+        cc->bucketed.current_read = -1;
+        return 1;
+    }
+}
+
+static int comm_select_write_bucket(struct comm_t *cc) {
+    uint64_t filled = cc->buckets_filled;
+    uint64_t processed = cc->buckets_processed;
+    if(filled - processed < cc->bucketed.buckets) {
+        cc->bucketed.current_write = (filled + 1) % cc->bucketed.buckets;
+        cc->bucketed.current_write_offset = 0;
+        return 0;
+    }
+    else {
+        cc->bucketed.current_write = -1;
+        return 1;
+    }
+}
+
+int comm_bucketread(struct comm_t *cc, void *data, uint64_t *data_size) {
+    // do we need a new bucket to read from?
+    if(cc->bucketed.current_read == -1) {
+        if(comm_select_read_bucket(cc)) return 1;
+    }
+
+    void *bucket = comm_bucket(cc, cc->bucketed.current_read);
+    int64_t total = *(uint64_t *)bucket;
+
+    // is this bucket finished?
+    if(cc->bucketed.current_read_offset >= total) {
+        cc->bucketed.current_read = -1;
+        cc->buckets_processed ++;
+        // tail-call recurse
+        return comm_bucketread(cc, data, data_size);
+    }
+
+    uint64_t off = cc->bucketed.current_read_offset;
+
+    // read data size
+    uint64_t read_size = *(uint64_t *)((char *)bucket + off);
+    // is there enough space?
+    if(read_size > *data_size) {
+        off += 8;
+        off += read_size;
+        cc->bucketed.current_read_offset = off;
+        return 1;
+    }
+
+    off += 8;
+    mem_copy(data, (char *)bucket + off, read_size);
+    off += read_size;
+    cc->bucketed.current_read_offset = off;
+
+    return 0;
+}
+
+int comm_bucketwrite(struct comm_t *cc, void *data, uint64_t data_size) {
+    // do we need a new bucket to write into?
+    if(cc->bucketed.current_write == -1) {
+        if(comm_select_write_bucket(cc)) return 1;
+    }
+
+    void *bucket = comm_bucket(cc, cc->bucketed.current_write);
+    uint64_t *total = (uint64_t *)bucket;
+
+    // is this bucket finished?
+    if(cc->bucketed.current_write_offset + data_size 
+        >= cc->bucketed.bucket_size) {
+
+        *total = cc->bucketed.current_write_offset;
+
+        cc->bucketed.current_write = -1;
+        cc->buckets_filled ++;
+        // tail-call recurse
+        return comm_bucketwrite(cc, data, data_size);
+    }
+
+    uint64_t off = cc->bucketed.current_write_offset;
+
+    // write data size
+    *(uint64_t *)((char *)bucket + off) = data_size;
+
+    mem_copy(data, (char *)bucket + off + 8, data_size);
+    cc->bucketed.current_write_offset = off + 8 + data_size;
+
+    return 0;
+}
+
+void comm_bucketflush(struct comm_t *cc) {
+    // default value: 8 (total size)
+    if(cc->bucketed.current_write_offset != 8) {
+        void *bucket = comm_bucket(cc, cc->bucketed.current_write);
+        uint64_t *total = (uint64_t *)bucket;
+
+        *total = cc->bucketed.current_write_offset;
+
+        cc->bucketed.current_write = -1;
+        cc->buckets_filled ++;
     }
 }

@@ -8,6 +8,10 @@ int comm_read(comm_t *cc, void *data, uint64_t *data_size, int blocking) {
         // simple case?
         return comm_peek(cc, data, data_size);
     }
+    else if((cc->flags & COMM_TYPE_MASK) == COMM_BUCKETED) {
+        // bucketed case
+        return comm_bucketread(cc, data, data_size);
+    }
 
     // complicated case
     while(1) {}
@@ -20,6 +24,17 @@ int comm_write(comm_t *cc, void *data, uint64_t data_size) {
         // simple case?
         return comm_put(cc, data, data_size);
     }
+    else if((cc->flags & COMM_TYPE_MASK) == COMM_BUCKETED) {
+        // bucketed case
+        return comm_bucketwrite(cc, data, data_size);
+    }
 
     return 1;
+}
+
+void comm_flush(comm_t *cc) {
+    if((cc->flags & COMM_TYPE_MASK) == COMM_BUCKETED) {
+        // bucketed case
+        comm_bucketflush(cc);
+    }
 }
