@@ -107,6 +107,16 @@ realm64:
 	mov	fs, ax
 	mov	gs, ax
 
+	; XXX: REMOVE THIS! This will lead to huge issues until sse state
+	; saving is implemented
+	mov rax, cr0
+	and ax, 0xfffb
+	or ax, 0x2
+	mov cr0, rax
+	mov rax, cr4
+	or ax, 3 << 9
+	mov cr4, rax
+
 	; Call kmain().
 	; First, set up the arguments.
 	; Calling convention uses rdi as the first argument.

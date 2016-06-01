@@ -176,6 +176,7 @@ static int process(queue_entry *q) {
 
         if(status.req_id != 0) {
             comm_write(q->info->sout, &status, sizeof(status));
+            comm_flush(q->info->sout);
         }
     }
 
@@ -220,7 +221,7 @@ void listen(task_state_t *hw_task) {
         if(!any) {
             __asm__ __volatile__("int $0xff");
         }
-        for(int i = 0; i < 10000000; i ++) __asm__ __volatile__("pause");
+        //for(int i = 0; i < 10000000; i ++) __asm__ __volatile__("pause");
         /*if(count % 1024 == 0) {
             d_printf("count: %x\n", count);
         }

@@ -92,7 +92,7 @@ static void task_setup(task_state_t *ts, task_info_t *info) {
     info->sin = (comm_t *)local_addr;
     info->sout = (comm_t *)(local_addr + CHANNEL_SIZE/2);
 
-    comm_init(info->sin, CHANNEL_SIZE/2, COMM_SIMPLE);
+    comm_init(info->sin, CHANNEL_SIZE/2, COMM_BUCKETED | COMM_BUCKETSIZE2(8));
     comm_init(info->sout, CHANNEL_SIZE/2, COMM_SIMPLE);
 
     // create incoming message channel

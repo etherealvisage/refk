@@ -135,7 +135,7 @@ static int comm_select_read_bucket(struct comm_t *cc) {
     uint64_t processed = cc->buckets_processed;
     if(filled > processed) {
         cc->bucketed.current_read = (processed + 1) % cc->bucketed.buckets;
-        cc->bucketed.current_read_offset = 0;
+        cc->bucketed.current_read_offset = 8;
         return 0;
     }
     else {
@@ -149,7 +149,7 @@ static int comm_select_write_bucket(struct comm_t *cc) {
     uint64_t processed = cc->buckets_processed;
     if(filled - processed < cc->bucketed.buckets) {
         cc->bucketed.current_write = (filled + 1) % cc->bucketed.buckets;
-        cc->bucketed.current_write_offset = 0;
+        cc->bucketed.current_write_offset = 8;
         return 0;
     }
     else {
@@ -221,7 +221,7 @@ int comm_bucketwrite(struct comm_t *cc, void *data, uint64_t data_size) {
     // write data size
     *(uint64_t *)((char *)bucket + off) = data_size;
 
-    mem_copy(data, (char *)bucket + off + 8, data_size);
+    mem_copy((char *)bucket + off + 8, data, data_size);
     cc->bucketed.current_write_offset = off + 8 + data_size;
 
     return 0;

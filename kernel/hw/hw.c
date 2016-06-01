@@ -69,6 +69,8 @@ static void print_value(uint64_t value, int x, int y) {
     }
 }
 
+struct sched_in_packet_t target_array[65536];
+
 // test #1: time for batch processing 1,000,000 requests
 static void aptime1(void *offset) {
     if(offset != 0) while(1) {}
@@ -111,10 +113,13 @@ static void aptime1(void *offset) {
     }
     */
 
+    print_string("beginning...", 6, 6);
+
     uint64_t target = *counter + 1000000000;
     uint64_t count = 0;
     for(; ; count ++) {
         if(*counter >= target) break;
+        /*
         sched_in_packet_t in;
         in.type = SCHED_PING;
         in.req_id = count+1;
@@ -122,10 +127,15 @@ static void aptime1(void *offset) {
         if(ret) {
             stalls ++;
             while(1) {
-                for(int i = 0; i < 10000000; i ++) __asm__ __volatile__("pause");
+                //for(int i = 0; i < 10000000; i ++) __asm__ __volatile__("pause");
                 if(!comm_write(schedin, &in, sizeof(in))) break;
             }
         }
+        */
+        sched_in_packet_t in;
+        in.type = SCHED_PING;
+        in.req_id = count+1;
+        mem_copy(target_array + (count % 65536), &in, sizeof(in));
     }
 
     uint64_t after = rdtsc();
@@ -355,6 +365,7 @@ void _start() {
         rlib_ready_ap_task(&task);
     }
 
+    d_printf("calling smpboot\n");
     smpboot_init(apic_ratio);
 
     // make default memory type writeback

@@ -73,13 +73,15 @@ def gen_flags(env):
 
 
 def gcc(env):
+    env.Append(CFLAGS = "-fdiagnostics-color=always")
     env.Append(CFLAGS = "-std=c99 -O3")
     env.Append(CFLAGS = "-W -Wall -Wextra -nostdlib -nodefaultlibs -ffreestanding")
     env.Append(CFLAGS = "-mcmodel=large -m64 -mno-red-zone")
     env.Append(CFLAGS = "-Werror -Wno-error=unused-variable -Wno-error=unused-function")
     env.Append(CFLAGS = "-Wno-error=unused-parameter")
     env.Append(CFLAGS = "-mno-sse -mno-mmx")
-    env.Append(CFLAGS = "-fdiagnostics-color=always")
+    #env.Append(CFLAGS = "-msse -msse2 -msse3 -mssse3 -mavx")
+    #env.Append(CFLAGS = "-msse -msse2 -msse3 -mssse3 -msse4")
 
 def clang(env):
     env.Replace(CC = "clang")
@@ -88,7 +90,9 @@ def clang(env):
     env.Append(CFLAGS = "-mcmodel=large -m64 -mno-red-zone")
     env.Append(CFLAGS = "-Werror -Wno-error=unused-variable -Wno-error=unused-function")
     env.Append(CFLAGS = "-Wno-error=unused-parameter")
-    env.Append(CFLAGS = "-mno-sse -mno-mmx")
+    #env.Append(CFLAGS = "-mno-sse -mno-mmx")
+    #env.Append(CFLAGS = "-msse -msse2 -msse3 -mssse3 -mavx")
+    env.Append(CFLAGS = "-msse -msse2")
 
 env = Environment(tools=["default", "nasm"])
 
@@ -100,7 +104,7 @@ else:
     clang(env)
 
 # for non-debug versions
-#env.Append(CFLAGS = "-DNDEBUG")
+env.Append(CFLAGS = "-DNDEBUG")
 
 Export("env")
 
